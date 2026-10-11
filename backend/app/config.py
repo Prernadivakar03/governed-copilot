@@ -21,6 +21,17 @@ class Settings(BaseSettings):
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "qwen2.5-coder:3b"
 
+    jwt_secret: str = ""
+    jwt_access_minutes: int = 15
+    jwt_refresh_days: int = 7
+    cookie_secure: bool = False
+    seed_user_password: str = ""
+
+    retrieval_mode: str = "hybrid"  # bm25 | vector | hybrid
+    approval_cost_threshold: float = 100000
+    approval_join_threshold: int = 4
+    approval_ttl_minutes: int = 60
+
     def conninfo(self, user: str, password: str, timeout_ms: int | None = None) -> str:
         options = f"-c statement_timeout={timeout_ms}" if timeout_ms else None
         kwargs = dict(
