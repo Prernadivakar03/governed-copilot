@@ -2,26 +2,27 @@ from __future__ import annotations
 
 import json
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
-from functools import lru_cache
 from typing import Any
 
 import psycopg
 
-from app.generation.llm import LLMError, OllamaClient
+from app.config import settings
+from app.generation.llm import LLMError
 from app.generation.prompt import build_messages
-from app.retrieval.retriever import Retriever
-from app.sandbox.executor import execute
-from app.semantic.loader import allowed_map, load_semantic, restricted_names
-from app.validation.sql_validator import Rejected, validate
+from app.governance.tools import MAX_ROWS, invoke
+from app.validation.sql_validator import Rejected
 
 MAX_ATTEMPTS = 3
-MAX_ROWS = 1000
 
 COMPLETED, BLOCKED, CLARIFY = "COMPLETED", "BLOCKED", "CLARIFY"
-CANNOT_ANSWER, FAILED = "CANNOT_ANSWER", "FAILED"
+CANNOT_ANSWER, FAILED, PENDING_APPROVAL = "CANNOT_ANSWER", "FAILED", "PENDING_APPROVAL"
+
+# gate(safe_sql, db_role) -> reason string if a human must approve, else None
+Gate = Callable[[str, str], str | None]
 
 
 @dataclass
@@ -42,16 +43,6 @@ class QueryResult:
     latency_ms: int = 0
 
 
-@lru_cache
-def _retriever(role: str) -> Retriever:
-    return Retriever(load_semantic(), role)
-
-
-@lru_cache
-def _llm() -> OllamaClient:
-    return OllamaClient()
-
-
 def _jsonable(v: Any) -> Any:
     if isinstance(v, Decimal):
         return float(v)
@@ -69,20 +60,26 @@ def _simple_answer(columns: list[str], rows: list[list[Any]], truncated: bool) -
     return f"{len(rows)} rows returned{note}."
 
 
-def run_query(question: str, role: str) -> QueryResult:
+def _cite(res: QueryResult, out: dict, ctx) -> None:
+    raw = out.get("source_ids")
+    cited = [s for s in raw if isinstance(s, str)] if isinstance(raw, list) else []
+    res.source_ids = [s for s in cited if s in ctx.source_ids]
+    res.invalid_citations = [s for s in cited if s not in ctx.source_ids]
+
+
+def run_query(question: str, role: str, gate: Gate | None = None,
+              retrieval_mode: str | None = None) -> QueryResult:
+    """role is the DATABASE role ('analyst' or 'steward')."""
+    mode = retrieval_mode or settings.retrieval_mode
     t_start = time.perf_counter()
     res = QueryResult(question=question, role=role)
 
     def event(stage: str, t0: float, **detail: Any) -> None:
         res.events.append({"stage": stage, "ms": round((time.perf_counter() - t0) * 1000), **detail})
 
-    sem = load_semantic()
-    allowed = allowed_map(sem, role)
-    restricted = restricted_names(sem, role)
-
     t0 = time.perf_counter()
-    ctx = _retriever(role).context(question)
-    event("retrieve", t0, tables=list(ctx.tables), metrics=list(ctx.metrics))
+    ctx = invoke("retrieve", question=question, role=role, mode=mode)
+    event("retrieve", t0, mode=ctx.mode, tables=list(ctx.tables), metrics=list(ctx.metrics))
 
     messages = build_messages(question, ctx)
     last_error, last_kind = "no attempt made", FAILED
@@ -92,7 +89,7 @@ def run_query(question: str, role: str) -> QueryResult:
 
         t0 = time.perf_counter()
         try:
-            out = _llm().chat_json(messages)
+            out = invoke("generate_sql", messages=messages)
         except LLMError as e:
             event("generate", t0, error=str(e))
             last_error, last_kind = str(e), FAILED
@@ -109,43 +106,66 @@ def run_query(question: str, role: str) -> QueryResult:
 
         sql = out.get("sql")
         err: str | None = None
+        kind = FAILED
         if not isinstance(sql, str) or not sql.strip():
-            err, kind = "You returned no SQL.", FAILED
+            err = "You returned no SQL."
         else:
             t0 = time.perf_counter()
             try:
-                safe_sql = validate(sql, allowed, restricted, MAX_ROWS)
+                safe_sql = invoke("validate_sql", sql=sql, role=role)
                 event("validate", t0, verdict="pass")
             except Rejected as e:
                 event("validate", t0, verdict="reject", reason=str(e))
                 err, kind = f"Validator rejected the SQL: {e}", BLOCKED
             else:
-                t0 = time.perf_counter()
-                try:
-                    ex = execute(safe_sql, role, MAX_ROWS)
-                    event("execute", t0, rows=len(ex.rows))
-                except psycopg.Error as e:
-                    event("execute", t0, error=type(e).__name__)
-                    err, kind = f"Database error: {str(e).splitlines()[0]}", FAILED
-                else:
-                    cited = [s for s in out.get("source_ids", []) if isinstance(s, str)]
-                    res.source_ids = [s for s in cited if s in ctx.source_ids]
-                    res.invalid_citations = [s for s in cited if s not in ctx.source_ids]
-                    res.sql = safe_sql
-                    res.columns = ex.columns
-                    res.rows = [[_jsonable(v) for v in row] for row in ex.rows]
-                    res.truncated = ex.truncated
-                    res.answer = _simple_answer(res.columns, res.rows, res.truncated)
-                    res.status = COMPLETED
+                reason: str | None = None
+                if gate is not None:
+                    t0 = time.perf_counter()
+                    try:
+                        reason = gate(safe_sql, role)
+                        event("gate", t0, approval_required=bool(reason))
+                    except psycopg.Error as e:
+                        event("gate", t0, error=type(e).__name__)
+                        err = f"Database error: {str(e).splitlines()[0]}"
+
+                if err is None and reason:
+                    _cite(res, out, ctx)
+                    res.sql, res.status, res.message = safe_sql, PENDING_APPROVAL, reason
                     break
+                if err is None:
+                    t0 = time.perf_counter()
+                    try:
+                        ex = invoke("execute_readonly", sql=safe_sql, role=role, max_rows=MAX_ROWS)
+                        event("execute", t0, rows=len(ex.rows))
+                    except psycopg.Error as e:
+                        event("execute", t0, error=type(e).__name__)
+                        err = f"Database error: {str(e).splitlines()[0]}"
+                    else:
+                        _cite(res, out, ctx)
+                        res.sql = safe_sql
+                        res.columns = ex.columns
+                        res.rows = [[_jsonable(v) for v in row] for row in ex.rows]
+                        res.truncated = ex.truncated
+                        res.answer = _simple_answer(res.columns, res.rows, res.truncated)
+                        res.status = COMPLETED
+                        break
 
         last_error, last_kind = err or "unknown", kind
         messages.append({"role": "assistant", "content": json.dumps(out)})
         messages.append({"role": "user", "content":
                          f"{last_error} Fix the query and reply with JSON again."})
 
-    if res.status not in (COMPLETED, CLARIFY, CANNOT_ANSWER):
+    if res.status not in (COMPLETED, CLARIFY, CANNOT_ANSWER, PENDING_APPROVAL):
         res.status, res.message = last_kind, last_error
 
     res.latency_ms = round((time.perf_counter() - t_start) * 1000)
     return res
+
+
+def execute_approved(sql: str, role: str) -> dict:
+    """Run SQL that a human approved. Re-validates first: approval never skips the validator."""
+    safe_sql = invoke("validate_sql", sql=sql, role=role)
+    ex = invoke("execute_readonly", sql=safe_sql, role=role, max_rows=MAX_ROWS)
+    rows = [[_jsonable(v) for v in row] for row in ex.rows]
+    return {"columns": ex.columns, "rows": rows, "truncated": ex.truncated,
+            "answer": _simple_answer(ex.columns, rows, ex.truncated)}

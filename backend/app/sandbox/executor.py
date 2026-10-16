@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 
 import psycopg
@@ -22,3 +23,15 @@ def execute(sql: str, role: str, max_rows: int = 1000, timeout_ms: int = 5000) -
             rows = cur.fetchmany(max_rows + 1)
     truncated = len(rows) > max_rows
     return ExecResult(columns, rows[:max_rows], truncated)
+
+
+def explain_cost(sql: str, role: str, timeout_ms: int = 5000) -> float:
+    """Planner's estimated total cost. Does not run the query, but also catches bad SQL."""
+    with psycopg.connect(settings.role_conninfo(role, timeout_ms)) as conn:
+        conn.read_only = True
+        with conn.cursor() as cur:
+            cur.execute("EXPLAIN (FORMAT JSON) " + sql)
+            plan = cur.fetchone()[0]
+    if isinstance(plan, str):
+        plan = json.loads(plan)
+    return float(plan[0]["Plan"]["Total Cost"])

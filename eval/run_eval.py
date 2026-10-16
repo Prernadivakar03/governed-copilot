@@ -7,6 +7,7 @@ from dataclasses import asdict
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
+MODE = sys.argv[1] if len(sys.argv) > 1 else None
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
@@ -31,7 +32,7 @@ def main() -> None:
 
     for q in gold:
         t0 = time.perf_counter()
-        res = run_query(q["question"], q["role"])
+        res = run_query(q["question"], q["role"], retrieval_mode=MODE)
         latencies.append(time.perf_counter() - t0)
 
         if q["type"] == "answer":
