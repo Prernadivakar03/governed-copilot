@@ -6,6 +6,7 @@ import pytest
 from app.auth.models import User
 from app.db import connect
 from app.governance import approvals
+from app import service
 
 
 @pytest.fixture
@@ -82,3 +83,35 @@ def test_expired_approval_cannot_be_approved(conn):
 def test_unknown_approval(conn):
     with pytest.raises(approvals.NotFound):
         approvals.decide(conn, 99999999, user(conn, "sam"), "APPROVED", "does not exist")
+
+
+def test_approve_and_execute_through_service(conn):
+    alice = user(conn, "alice")
+    sam = user(conn, "sam")
+    qid = uuid.uuid4().hex
+    conn.execute(
+        "INSERT INTO app.queries (id, user_id, question, data_role, status, sql) "
+        "VALUES (%s, %s, 'how many orders', 'analyst', 'PENDING_APPROVAL', 'SELECT COUNT(*) FROM orders')",
+        (qid, alice.id),
+    )
+    aid = approvals.create_pending(conn, qid, alice.id, "needs approval", 60)
+    conn.commit()
+
+    try:
+        out = service.decide_approval(sam, aid, "approve", "approved by steward")
+        assert out["decision"] == "APPROVED"
+        assert out["outcome"] == "decided"
+        assert out["query"]["status"] == "COMPLETED"
+    finally:
+        with connect() as cleanup_conn:
+            cleanup_conn.execute("DELETE FROM app.approvals WHERE id = %s", (aid,))
+            cleanup_conn.execute("DELETE FROM app.queries WHERE id = %s", (qid,))
+
+
+def test_execute_approved_rejects_invalid_sql():
+    from app.pipeline import execute_approved
+    from app.validation.sql_validator import Rejected
+
+    with pytest.raises(Rejected):
+        execute_approved("SELECT * FROM orders", "analyst")
+
