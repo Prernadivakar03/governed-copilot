@@ -14,6 +14,9 @@ from app.config import settings
 from app.generation.llm import LLMError
 from app.generation.prompt import build_messages
 from app.governance.tools import MAX_ROWS, invoke
+from app.semantic.loader import load_semantic
+from app.variants import Variant, full_schema_context, strip_semantic
+from app.validation.grounding import sanity_flags, ungrounded_numbers
 from app.validation.sql_validator import Rejected
 
 MAX_ATTEMPTS = 3
@@ -38,6 +41,9 @@ class QueryResult:
     message: str | None = None
     source_ids: list[str] = field(default_factory=list)
     invalid_citations: list[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
+    flags: list[str] = field(default_factory=list)
+    hallucination_flag: bool = False
     attempts: int = 0
     events: list[dict] = field(default_factory=list)
     latency_ms: int = 0
@@ -67,19 +73,58 @@ def _cite(res: QueryResult, out: dict, ctx) -> None:
     res.invalid_citations = [s for s in cited if s not in ctx.source_ids]
 
 
+def _llm_answer(res: QueryResult, event: Callable[..., None]) -> None:
+    """Replace the templated answer with an LLM one, but only if every number is grounded."""
+    if not (settings.llm_answer and res.rows):
+        return
+    t0 = time.perf_counter()
+    try:
+        out = invoke("summarize", question=res.question, columns=res.columns,
+                     rows=res.rows, truncated=res.truncated)
+    except LLMError as e:
+        event("summarize", t0, error=str(e))
+        return
+    text = out.get("answer")
+    if not isinstance(text, str) or not text.strip():
+        event("summarize", t0, verdict="empty")
+        return
+    bad = ungrounded_numbers(text, res.columns, res.rows, res.question)
+    if bad:
+        res.hallucination_flag = True
+        res.flags.append("draft answer had numbers not in the result: "
+                         + ", ".join(f"{b:g}" for b in bad))
+        event("summarize", t0, verdict="ungrounded")
+        return
+    res.answer = text.strip()
+    event("summarize", t0, verdict="grounded")
+
+
 def run_query(question: str, role: str, gate: Gate | None = None,
-              retrieval_mode: str | None = None) -> QueryResult:
+              retrieval_mode: str | None = None,
+              on_event: Callable[[dict], None] | None = None,
+              variant: Variant | None = None) -> QueryResult:
     """role is the DATABASE role ('analyst' or 'steward')."""
-    mode = retrieval_mode or settings.retrieval_mode
+    v = variant or Variant("default", retrieval=retrieval_mode or settings.retrieval_mode)
     t_start = time.perf_counter()
     res = QueryResult(question=question, role=role)
 
     def event(stage: str, t0: float, **detail: Any) -> None:
-        res.events.append({"stage": stage, "ms": round((time.perf_counter() - t0) * 1000), **detail})
+        ev = {"stage": stage, "ms": round((time.perf_counter() - t0) * 1000), **detail}
+        res.events.append(ev)
+        if on_event is not None:
+            on_event(ev)
 
     t0 = time.perf_counter()
-    ctx = invoke("retrieve", question=question, role=role, mode=mode)
-    event("retrieve", t0, mode=ctx.mode, tables=list(ctx.tables), metrics=list(ctx.metrics))
+    if v.retrieval == "full_schema":
+        ctx = full_schema_context(load_semantic())
+    else:
+        ctx = invoke("retrieve", question=question,
+                     role=role if v.permissions else "steward", mode=v.retrieval)
+    if not v.semantic:
+        ctx = strip_semantic(ctx)
+    res.notes = list(ctx.notes)
+    event("retrieve", t0, mode=ctx.mode, tables=list(ctx.tables),
+          metrics=list(ctx.metrics), notes=res.notes)
 
     messages = build_messages(question, ctx)
     last_error, last_kind = "no attempt made", FAILED
@@ -147,6 +192,8 @@ def run_query(question: str, role: str, gate: Gate | None = None,
                         res.rows = [[_jsonable(v) for v in row] for row in ex.rows]
                         res.truncated = ex.truncated
                         res.answer = _simple_answer(res.columns, res.rows, res.truncated)
+                        res.flags = sanity_flags(res.columns, res.rows, res.truncated)
+                        _llm_answer(res, event)
                         res.status = COMPLETED
                         break
 
@@ -164,8 +211,13 @@ def run_query(question: str, role: str, gate: Gate | None = None,
 
 def execute_approved(sql: str, role: str) -> dict:
     """Run SQL that a human approved. Re-validates first: approval never skips the validator."""
-    safe_sql = invoke("validate_sql", sql=sql, role=role)
+    if v.validate:
+        safe_sql = invoke("validate_sql", sql=sql, role=role)
+        event("validate", t0, verdict="pass")
+    else:
+        safe_sql = sql.strip()
+        event("validate", t0, verdict="skipped")
     ex = invoke("execute_readonly", sql=safe_sql, role=role, max_rows=MAX_ROWS)
     rows = [[_jsonable(v) for v in row] for row in ex.rows]
     return {"columns": ex.columns, "rows": rows, "truncated": ex.truncated,
-            "answer": _simple_answer(ex.columns, rows, ex.truncated)}
+            "answer": _simple_answer(ex.columns, rows, ex.truncated)}                     

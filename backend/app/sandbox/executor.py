@@ -21,7 +21,7 @@ def execute(sql: str, role: str, max_rows: int = 1000, timeout_ms: int = 5000) -
             cur.execute(sql)  # no params, so '%' in LIKE patterns is safe
             columns = [d.name for d in cur.description] if cur.description else []
             rows = cur.fetchmany(max_rows + 1)
-    truncated = len(rows) > max_rows
+        truncated = len(rows) >= max_rows  # the validator caps LIMIT at max_rows, so hitting it means "possibly cut"
     return ExecResult(columns, rows[:max_rows], truncated)
 
 

@@ -3,7 +3,7 @@ import psycopg
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import approvals, audit, auth, queries
+from app.api import approvals, audit, auth, evals, metrics, queries
 from app.config import settings
 from app.db import connect
 
@@ -17,7 +17,7 @@ app.add_middleware(  # the React dev server (Part 3) runs on 5173
     allow_headers=["Authorization", "Content-Type"],
 )
 
-for r in (auth.router, queries.router, approvals.router, audit.router):
+for r in (auth.router, queries.router, approvals.router, audit.router, metrics.router, evals.router):
     app.include_router(r)
 
 

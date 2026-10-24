@@ -23,6 +23,10 @@ def tokenize(text: str) -> list[str]:
     return [t[:-1] if len(t) > 3 and t.endswith("s") else t for t in toks]
 
 
+def _norm(s: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", s.lower()).strip()
+
+
 def rrf(rankings: list[list[int]], k: int = RRF_K) -> list[tuple[int, float]]:
     """Reciprocal rank fusion: each ranked list votes 1/(k+rank) for its items."""
     scores: dict[int, float] = {}
@@ -35,7 +39,7 @@ def rrf(rankings: list[list[int]], k: int = RRF_K) -> list[tuple[int, float]]:
 @dataclass
 class Doc:
     id: str
-    kind: str
+    kind: str                 # "table" | "column" | "metric" | "join"
     text: str
     tables: tuple[str, ...]
 
@@ -49,6 +53,7 @@ class Context:
     rules: list[str]
     source_ids: set[str] = field(default_factory=set)
     mode: str = "bm25"
+    notes: list[str] = field(default_factory=list)
 
 
 class Retriever:
@@ -123,6 +128,28 @@ class Retriever:
             tables.update(t for t in d.tables if t in self.allowed)
             if d.kind == "metric":
                 hit_metrics.add(d.id.split(":", 1)[1])
+
+        # metric conflicts: documented default unless the user asked for the other metric
+        notes: list[str] = []
+        qn = f" {_norm(question)} "
+        for cf in self.sem.conflicts:
+            members = [m for m in cf.metrics if m in self.metrics]
+            if len(members) < 2 or cf.default not in members:
+                continue
+            if not hit_metrics & set(members):
+                continue
+            explicit = [
+                m for m in members
+                if m != cf.default
+                and any(f" {_norm(p)} " in qn for p in [m, *self.metrics[m].synonyms])
+            ]
+            chosen = explicit[0] if explicit else cf.default
+            hit_metrics -= set(members)
+            hit_metrics.add(chosen)
+            tables.update(t for t in self.metrics[chosen].tables if t in self.allowed)
+            how = "asked for explicitly" if explicit else "documented default"
+            notes.append(f"Metric choice: {chosen} ({how}). {cf.note}")
+
         if not tables:
             tables = set(self.allowed)
 
@@ -147,6 +174,6 @@ class Retriever:
         return Context(
             tables=ctx_tables,
             table_desc={t: self.sem.tables[t].description for t in ctx_tables},
-            joins=joins, metrics=metrics, rules=self.sem.rules,
-            source_ids=ids, mode=self.mode,
+            joins=joins, metrics=metrics, rules=self.sem.rules + notes,
+            source_ids=ids, mode=self.mode, notes=notes,
         )

@@ -13,19 +13,21 @@ from app.pipeline import COMPLETED, PENDING_APPROVAL, execute_approved, run_quer
 from app.validation.sql_validator import Rejected
 
 
-def submit_query(user: User, question: str) -> dict:
+def create_query(user: User, question: str) -> str:
     qid = uuid.uuid4().hex
-    data_role = DATA_ROLE[user.role]
-
     with connect() as conn:
         conn.execute(
             "INSERT INTO app.queries (id, user_id, question, data_role, status) "
-            "VALUES (%s, %s, %s, %s, 'RECEIVED')", (qid, user.id, question, data_role))
+            "VALUES (%s, %s, %s, %s, 'RECEIVED')", (qid, user.id, question, DATA_ROLE[user.role]))
         audit.append("QUERY_RECEIVED", user.username, user.role, qid,
                      {"question": question}, conn=conn)
+    return qid
 
+
+def process_query(user: User, question: str, qid: str, on_event=None) -> dict:
+    data_role = DATA_ROLE[user.role]
     try:
-        res = run_query(question, data_role, gate=approval_reason)
+        res = run_query(question, data_role, gate=approval_reason, on_event=on_event)
     except Exception as e:
         with connect() as conn:
             conn.execute("UPDATE app.queries SET status = 'FAILED', message = %s, "
@@ -36,8 +38,10 @@ def submit_query(user: User, question: str) -> dict:
 
     result_json = None
     if res.status == COMPLETED:
-        result_json = json.dumps({"columns": res.columns, "rows": res.rows,
-                                  "truncated": res.truncated, "answer": res.answer})
+        result_json = json.dumps({
+            "columns": res.columns, "rows": res.rows, "truncated": res.truncated,
+            "answer": res.answer, "source_ids": res.source_ids, "flags": res.flags,
+            "notes": res.notes, "hallucination_flag": res.hallucination_flag})
 
     with connect() as conn:
         conn.execute(
@@ -55,6 +59,9 @@ def submit_query(user: User, question: str) -> dict:
             "message": res.message,
             "sql": res.sql,
             "source_ids": res.source_ids,
+            "notes": res.notes,
+            "flags": res.flags,
+            "hallucination_flag": res.hallucination_flag,
             "retrieved_tables": next((e.get("tables") for e in res.events
                                       if e["stage"] == "retrieve"), []),
             "validator": [e for e in res.events if e["stage"] == "validate"],
@@ -65,6 +72,11 @@ def submit_query(user: User, question: str) -> dict:
     out = asdict(res)
     out["query_id"] = qid
     return out
+
+
+def submit_query(user: User, question: str) -> dict:
+    """Synchronous path (used by tests and plain API calls)."""
+    return process_query(user, question, create_query(user, question))
 
 
 def _execute_after_approval(query_id: str, approver: User) -> None:

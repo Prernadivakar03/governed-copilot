@@ -1,0 +1,55 @@
+:root {
+  --bg: #0b0d10; --panel: #111418; --line: #232830; --text: #e6e8eb; --muted: #8b93a1;
+  --accent: #5b8def; --ok: #3fb27f; --warn: #d9a441; --bad: #e5534b;
+  --sans: "Inter", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #fafafa; --panel: #ffffff; --line: #e3e5e8; --text: #14171a; --muted: #6a7280;
+  --accent: #2f5fd0; --ok: #1f8a5b; --warn: #a97a14; --bad: #c93c35;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 var(--sans); font-variant-numeric: tabular-nums; }
+h1 { font-size: 18px; font-weight: 600; margin: 0 0 16px; }
+h2 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 24px 0 8px; }
+.mono, pre, td.num { font-family: var(--mono); }
+.muted { color: var(--muted); }
+.page { max-width: 980px; margin: 0 auto; padding: 24px 20px 64px; }
+.top { display: flex; align-items: center; gap: 16px; padding: 10px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.top .brand { font-weight: 600; letter-spacing: .02em; }
+.top nav { display: flex; gap: 4px; }
+.top nav a { color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: 6px; }
+.top nav a.active { color: var(--text); background: var(--bg); border: 1px solid var(--line); }
+.spacer { flex: 1; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+input, textarea { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font: inherit; }
+input:focus, textarea:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+textarea { resize: vertical; min-height: 64px; }
+button { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 7px 14px; font: inherit; font-weight: 500; cursor: pointer; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+button.danger { background: transparent; color: var(--bad); border: 1px solid var(--bad); }
+.row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.stack > * + * { margin-top: 10px; }
+.badge { display: inline-block; font: 500 11px var(--mono); padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); }
+.badge.ok { color: var(--ok); border-color: var(--ok); }
+.badge.warn { color: var(--warn); border-color: var(--warn); }
+.badge.bad { color: var(--bad); border-color: var(--bad); }
+.chip { display: inline-block; font: 400 11px var(--mono); padding: 2px 8px; margin: 0 6px 6px 0; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); }
+.trace { font: 12px var(--mono); }
+.trace div { display: grid; grid-template-columns: 150px 70px 1fr; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--line); }
+pre.sql { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; overflow-x: auto; white-space: pre-wrap; margin: 0; font-size: 12px; }
+mark { background: color-mix(in srgb, var(--bad) 30%, transparent); color: var(--text); padding: 0 2px; border-radius: 3px; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--panel); }
+td.num { text-align: right; }
+.error { color: var(--bad); }
+.login { max-width: 340px; margin: 12vh auto; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.stat { margin: 0; }
+.stat b { display: block; font-size: 20px; margin-top: 4px; }
+.bar { height: 6px; background: var(--accent); border-radius: 3px; margin-top: 4px; }

@@ -100,7 +100,7 @@ metrics:
     filters: ["orders.order_status = 'delivered'"]
     owner: finance
     version: 1
-    synonyms: ["gross revenue", "revenue including shipping"]
+    synonyms: ["gross revenue", "revenue including shipping", "revenue with freight", "revenue including freight"]
   order_count:
     description: "Number of distinct orders."
     expression: "COUNT(DISTINCT orders.order_id)"
@@ -138,3 +138,10 @@ joins:
   - {left: order_payments.order_id, right: orders.order_id, cardinality: many-to-one}
   - {left: order_reviews.order_id, right: orders.order_id, cardinality: many-to-one}
   - {left: products.product_category_name, right: category_translation.product_category_name, cardinality: many-to-one}
+
+
+
+conflicts:
+  - metrics: [revenue, gross_revenue_with_freight]
+    default: revenue
+    note: "Revenue means item price excluding freight. Use the gross metric only when the user says gross, shipping or freight."

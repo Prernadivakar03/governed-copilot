@@ -1,16 +1,17 @@
-"""Tool allow-list. The pipeline can only call these five tools, by name."""
+"""Tool allow-list. The pipeline can only call these six tools, by name. summarize was added for answer writing."""
 from collections.abc import Callable
 from functools import lru_cache
 from typing import Any
 
 from app.generation.llm import OllamaClient
+from app.generation.prompt import build_answer_messages
 from app.retrieval.retriever import Context, Retriever
 from app.sandbox.executor import ExecResult, execute, explain_cost
 from app.semantic.loader import allowed_map, load_semantic, restricted_names
 from app.validation.sql_validator import validate
 
 MAX_ROWS = 1000
-ALLOWED_TOOLS = ("retrieve", "generate_sql", "validate_sql", "execute_readonly", "explain")
+ALLOWED_TOOLS = ("retrieve", "generate_sql", "validate_sql", "execute_readonly", "explain", "summarize")
 _REGISTRY: dict[str, Callable[..., Any]] = {}
 
 
@@ -67,3 +68,8 @@ def _execute_readonly(sql: str, role: str, max_rows: int = MAX_ROWS) -> ExecResu
 @tool("explain")
 def _explain(sql: str, role: str) -> float:
     return explain_cost(sql, role)
+
+
+@tool("summarize")
+def _summarize(question: str, columns: list[str], rows: list[list], truncated: bool) -> dict:
+    return _llm().chat_json(build_answer_messages(question, columns, rows, truncated))

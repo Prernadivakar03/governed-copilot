@@ -13,10 +13,10 @@ class LLMError(Exception):
 
 
 class OllamaClient:
-    def __init__(self, url: str | None = None, model: str | None = None, use_cache: bool = True):
+    def __init__(self, url: str | None = None, model: str | None = None, use_cache: bool | None = None):
         self.url = url or settings.ollama_url
         self.model = model or settings.ollama_model
-        self.use_cache = use_cache
+        self.use_cache = settings.llm_cache if use_cache is None else use_cache
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
     def chat_json(self, messages: list[dict]) -> dict:
