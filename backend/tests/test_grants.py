@@ -26,3 +26,9 @@ def test_roles_cannot_write():
     with _connect("steward") as conn:
         with pytest.raises(psycopg.errors.Error):
             conn.execute("DELETE FROM orders")
+
+
+def test_app_schema_hidden_from_analyst():
+    with _connect("analyst") as conn:
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            conn.execute("SELECT * FROM app.users")
