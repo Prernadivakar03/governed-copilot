@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 import httpx
 import psycopg
 from fastapi import FastAPI, HTTPException
@@ -6,8 +8,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import approvals, audit, auth, evals, metrics, queries
 from app.config import settings
 from app.db import connect
+from app.governance.tools import warm_retrieval_index
 
-app = FastAPI(title="Governed Analytics Copilot")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    warm_retrieval_index()
+    yield
+
+
+app = FastAPI(title="Governed Analytics Copilot", lifespan=lifespan)
 
 app.add_middleware(  # the React dev server (Part 3) runs on 5173
     CORSMiddleware,

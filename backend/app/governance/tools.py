@@ -1,8 +1,10 @@
 """Tool allow-list. The pipeline can only call these six tools, by name. summarize was added for answer writing."""
+import logging
 from collections.abc import Callable
 from functools import lru_cache
 from typing import Any
 
+from app.config import settings
 from app.generation.llm import OllamaClient
 from app.generation.prompt import build_answer_messages
 from app.retrieval.retriever import Context, Retriever
@@ -13,6 +15,7 @@ from app.validation.sql_validator import validate
 MAX_ROWS = 1000
 ALLOWED_TOOLS = ("retrieve", "generate_sql", "validate_sql", "execute_readonly", "explain", "summarize")
 _REGISTRY: dict[str, Callable[..., Any]] = {}
+log = logging.getLogger(__name__)
 
 
 class ToolNotAllowed(Exception):
@@ -37,6 +40,17 @@ def invoke(name: str, **kwargs: Any) -> Any:
 @lru_cache
 def _retriever(role: str, mode: str) -> Retriever:
     return Retriever(load_semantic(), role, mode=mode)
+
+
+def warm_retrieval_index() -> None:
+    """Build the configured retrieval indexes before the first user query."""
+    for role in ("analyst", "steward"):
+        try:
+            _retriever(role, settings.retrieval_mode)
+        except Exception:
+            # Retrieval remains available through the normal fallback path if
+            # the embedding model cannot be loaded during startup.
+            log.exception("Could not warm the %s retrieval index", role)
 
 
 @lru_cache
