@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Navigate, NavLink, Outlet, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth";
 import type { Role } from "./api";
@@ -22,12 +22,17 @@ function Shell() {
   const { user, signOut } = useAuth();
   const toggleTheme = () => {
     const root = document.documentElement;
-    root.dataset.theme = root.dataset.theme === "light" ? "dark" : "light";
+    const theme = root.dataset.theme === "light" ? "dark" : "light";
+    root.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
   };
+  useEffect(() => {
+    document.documentElement.dataset.theme = localStorage.getItem("theme") === "light" ? "light" : "dark";
+  }, []);
   return (
     <>
       <header className="top">
-        <span className="brand">Ledger</span>
+        <span className="brand"><img src="/governed-mark.svg" alt="" />Governed Copilot</span>
         {user && (
           <nav>
             {user.role !== "auditor" && <NavLink to="/ask">Ask</NavLink>}

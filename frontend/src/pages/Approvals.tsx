@@ -19,6 +19,8 @@ function Item({ a, onDone }: { a: Approval; onDone: (msg: string) => void }) {
   const [error, setError] = useState("");
 
   async function act(kind: "approve" | "reject") {
+    const verb = kind === "approve" ? "approve" : "reject";
+    if (!window.confirm(`Are you sure you want to ${verb} this query?`)) return;
     setBusy(true);
     setError("");
     try {
