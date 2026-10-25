@@ -1,0 +1,25 @@
+sequenceDiagram
+    actor Analyst
+    participant API as FastAPI query API
+    participant Pipeline
+    participant Gate as Policy gate
+    participant DB as PostgreSQL read-only role
+    participant Steward
+    participant Approvals API
+    Analyst->>API: Submit question
+    API->>Pipeline: Retrieve, generate SQL, validate
+    Pipeline->>Gate: Estimate cost and inspect sensitivity/joins
+    Gate->>DB: EXPLAIN query
+    Gate-->>Pipeline: Approval reason
+    Pipeline-->>API: PENDING_APPROVAL
+    API-->>Analyst: Query status and SQL
+    Steward->>Approvals API: Approve/reject with reason
+    Approvals API->>Approvals API: Check role, expiry, no self-approval
+    alt approved
+        Approvals API->>Pipeline: Revalidate approved SQL
+        Pipeline->>DB: Execute with read-only role
+        DB-->>Pipeline: Rows
+        Pipeline-->>Analyst: Result and audit status
+    else rejected
+        Approvals API-->>Analyst: Rejected status
+    end

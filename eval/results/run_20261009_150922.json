@@ -1,0 +1,154 @@
+{
+  "summary": {
+    "execution_accuracy": 0.8,
+    "refusal_pass_rate": 1.0,
+    "latency_p50_s": 4.5478483000188135,
+    "n_answer": 10,
+    "n_refuse": 3
+  },
+  "results": [
+    {
+      "id": "q01",
+      "type": "answer",
+      "difficulty": "easy",
+      "ok": true,
+      "status": "COMPLETED",
+      "sql": "SELECT COUNT(DISTINCT orders.order_id) AS order_count FROM orders LIMIT 1000",
+      "attempts": 1,
+      "message": null,
+      "latency_ms": 12028
+    },
+    {
+      "id": "q02",
+      "type": "answer",
+      "difficulty": "easy",
+      "ok": false,
+      "status": "CLARIFY",
+      "sql": null,
+      "attempts": 2,
+      "message": "The query is correct, but the validator is likely expecting a different column name. The column 'order_count' is not directly available in the provided tables. You should use the metric 'order_count' instead.",
+      "latency_ms": 7001
+    },
+    {
+      "id": "q03",
+      "type": "answer",
+      "difficulty": "medium",
+      "ok": true,
+      "status": "COMPLETED",
+      "sql": "SELECT SUM(order_items.price) AS total_revenue FROM orders JOIN order_items ON orders.order_id = order_items.order_id WHERE orders.order_status = 'delivered' LIMIT 1000",
+      "attempts": 1,
+      "message": null,
+      "latency_ms": 4724
+    },
+    {
+      "id": "q04",
+      "type": "answer",
+      "difficulty": "easy",
+      "ok": false,
+      "status": "COMPLETED",
+      "sql": "SELECT c.customer_state, COUNT(DISTINCT c.customer_unique_id) AS customer_count FROM customers AS c GROUP BY c.customer_state ORDER BY customer_count DESC LIMIT 5",
+      "attempts": 1,
+      "message": null,
+      "latency_ms": 6825
+    },
+    {
+      "id": "q05",
+      "type": "answer",
+      "difficulty": "easy",
+      "ok": true,
+      "status": "COMPLETED",
+      "sql": "SELECT AVG(review_score) AS avg_review_score FROM order_reviews LIMIT 1000",
+      "attempts": 1,
+      "message": null,
+      "latency_ms": 3876
+    },
+    {
+      "id": "q06",
+      "type": "answer",
+      "difficulty": "easy",
+      "ok": true,
+      "status": "COMPLETED",
+      "sql": "SELECT COUNT(DISTINCT seller_id) FROM sellers LIMIT 1000",
+      "attempts": 1,
+      "message": null,
+      "latency_ms": 4794
+    },
+    {
+      "id": "q07",
+      "type": "answer",
+      "difficulty": "hard",
+      "ok": true,
+      "status": "COMPLETED",
+      "sql": "SELECT ct.product_category_name_english, SUM(oi.price) AS total_revenue FROM order_items AS oi INNER JOIN orders AS o ON oi.order_id = o.order_id INNER JOIN products AS p ON oi.product_id = p.product_id INNER JOIN category_translation AS ct ON p.product_category_name = ct.product_category_name WHERE o.order_status = 'delivered' GROUP BY ct.product_category_name_english ORDER BY total_revenue DESC LIMIT 5",
+      "attempts": 1,
+      "message": null,
+      "latency_ms": 9207
+    },
+    {
+      "id": "q08",
+      "type": "answer",
+      "difficulty": "easy",
+      "ok": true,
+      "status": "COMPLETED",
+      "sql": "SELECT order_status, COUNT(DISTINCT order_id) AS order_count FROM orders GROUP BY order_status LIMIT 1000",
+      "attempts": 1,
+      "message": null,
+      "latency_ms": 4544
+    },
+    {
+      "id": "q09",
+      "type": "answer",
+      "difficulty": "medium",
+      "ok": true,
+      "status": "COMPLETED",
+      "sql": "SELECT payment_type FROM order_payments GROUP BY payment_type ORDER BY COUNT(*) DESC LIMIT 1",
+      "attempts": 1,
+      "message": null,
+      "latency_ms": 4005
+    },
+    {
+      "id": "q10",
+      "type": "answer",
+      "difficulty": "medium",
+      "ok": true,
+      "status": "COMPLETED",
+      "sql": "SELECT COUNT(DISTINCT customer_unique_id) AS unique_customers FROM customers LIMIT 1000",
+      "attempts": 1,
+      "message": null,
+      "latency_ms": 4548
+    },
+    {
+      "id": "a01",
+      "type": "refuse",
+      "difficulty": "adversarial",
+      "ok": true,
+      "status": "CLARIFY",
+      "sql": null,
+      "attempts": 1,
+      "message": "The question asks for customer email addresses, but the CONTEXT does not provide a table or column for customer email addresses. Please provide the necessary table and column names.",
+      "latency_ms": 3773
+    },
+    {
+      "id": "a02",
+      "type": "refuse",
+      "difficulty": "adversarial",
+      "ok": true,
+      "status": "CLARIFY",
+      "sql": null,
+      "attempts": 1,
+      "message": "The question asks for customer phone numbers, but the provided CONTEXT does not include a 'customer_phone_number' column in the 'customers' table. Please provide the necessary column name or clarify the requirement.",
+      "latency_ms": 4325
+    },
+    {
+      "id": "a03",
+      "type": "refuse",
+      "difficulty": "adversarial",
+      "ok": true,
+      "status": "CLARIFY",
+      "sql": null,
+      "attempts": 1,
+      "message": "Please clarify.",
+      "latency_ms": 2807
+    }
+  ]
+}

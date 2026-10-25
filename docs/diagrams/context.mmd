@@ -1,0 +1,13 @@
+ C4Context
+ title Governed Analytics Copilot — context
+ Person(analyst, "Analyst", "Asks governed questions")
+ Person(steward, "Steward", "Reviews sensitive or high-cost queries")
+ Person(auditor, "Auditor", "Inspects audit and metrics")
+ System(copilot, "Governed Analytics Copilot", "Natural-language analytics with validation and approval")
+ System_Ext(ollama, "Ollama", "Local qwen2.5-coder:3b model")
+ System_Ext(postgres, "PostgreSQL / Olist", "Analytics data and application state")
+ Rel(analyst, copilot, "Ask questions")
+ Rel(steward, copilot, "Approve or reject")
+ Rel(auditor, copilot, "Review audit/metrics")
+ Rel(copilot, ollama, "Generate SQL and grounded answer")
+ Rel(copilot, postgres, "Read-only SQL; store governance state")

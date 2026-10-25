@@ -1,0 +1,17 @@
+C4Container
+title Governed Analytics Copilot — containers
+Person(analyst, "Analyst")
+Person(steward, "Steward")
+Person(auditor, "Auditor")
+System_Boundary(copilot, "Governed Analytics Copilot") {
+  Container(web, "React web client", "React + Vite", "Ask, approvals, audit, metrics")
+  Container(api, "FastAPI", "Python", "Auth, query pipeline, governance APIs")
+  ContainerDb(pg, "PostgreSQL", "PostgreSQL", "Olist tables, users, queries, approvals, audit")
+}
+System_Ext(ollama, "Ollama", "Local model server")
+Rel(analyst, web, "Uses")
+Rel(steward, web, "Uses")
+Rel(auditor, web, "Uses")
+Rel(web, api, "HTTPS/JSON + SSE")
+Rel(api, pg, "Read-only analytics role; app metadata")
+Rel(api, ollama, "Local HTTP: generate and summarize")
