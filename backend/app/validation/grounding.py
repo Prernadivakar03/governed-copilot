@@ -2,7 +2,7 @@
 import re
 
 SCALE = {"thousand": 1e3, "k": 1e3, "million": 1e6, "m": 1e6, "billion": 1e9, "bn": 1e9}
-NUM = re.compile(r"(?<![\w.])(-?\d[\d,]*(?:\.\d+)?)(?:\s*(thousand|million|billion|bn|k|m)\b)?", re.I)
+NUM = re.compile(r"(?<![\w.])(-?\d[\d,]*(?:\.\d+)?)(?:\s*(thousand|million|billion|bn|k|m)\b)?", re.IGNORECASE)
 
 # column-name fragment -> (min, max)
 RANGES = {"review_score": (1, 5), "pct": (0, 100), "percent": (0, 100)}

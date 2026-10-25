@@ -1,8 +1,8 @@
+import psycopg
 import pytest
-from fastapi.testclient import TestClient
-
 from app.config import settings
 from app.main import app
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture(scope="module")
@@ -10,7 +10,7 @@ def client():
     c = TestClient(app)
     try:
         r = c.post("/auth/login", json={"username": "alice", "password": settings.seed_user_password})
-    except Exception:
+    except psycopg.Error:
         pytest.skip("database not available")
     if r.status_code != 200:
         pytest.skip("run: python -m scripts.seed_users")

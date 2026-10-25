@@ -15,9 +15,9 @@ from app.generation.llm import LLMError
 from app.generation.prompt import build_messages
 from app.governance.tools import MAX_ROWS, invoke
 from app.semantic.loader import load_semantic
-from app.variants import Variant, full_schema_context, strip_semantic
 from app.validation.grounding import sanity_flags, ungrounded_numbers
 from app.validation.sql_validator import Rejected
+from app.variants import Variant, full_schema_context, strip_semantic
 
 MAX_ATTEMPTS = 3
 
@@ -211,13 +211,8 @@ def run_query(question: str, role: str, gate: Gate | None = None,
 
 def execute_approved(sql: str, role: str) -> dict:
     """Run SQL that a human approved. Re-validates first: approval never skips the validator."""
-    if v.validate:
-        safe_sql = invoke("validate_sql", sql=sql, role=role)
-        event("validate", t0, verdict="pass")
-    else:
-        safe_sql = sql.strip()
-        event("validate", t0, verdict="skipped")
+    safe_sql = invoke("validate_sql", sql=sql, role=role)
     ex = invoke("execute_readonly", sql=safe_sql, role=role, max_rows=MAX_ROWS)
-    rows = [[_jsonable(v) for v in row] for row in ex.rows]
+    rows = [[_jsonable(cell) for cell in row] for row in ex.rows]
     return {"columns": ex.columns, "rows": rows, "truncated": ex.truncated,
-            "answer": _simple_answer(ex.columns, rows, ex.truncated)}                     
+            "answer": _simple_answer(ex.columns, rows, ex.truncated)}

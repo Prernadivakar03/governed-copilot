@@ -6,9 +6,8 @@ import argparse
 import json
 import re
 import sys
-import time
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
@@ -16,19 +15,19 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 sys.path.insert(0, str(ROOT / "eval"))
 
-from app.config import settings  # noqa: E402
-from app.pipeline import COMPLETED, QueryResult, run_query  # noqa: E402
-from app.sandbox.executor import execute  # noqa: E402
-from app.validation.grounding import claimed_numbers  # noqa: E402
-from app.variants import VARIANTS  # noqa: E402
-from fingerprint import fingerprint  # noqa: E402
-from report import summarize  # noqa: E402
+from app.config import settings
+from app.pipeline import COMPLETED, QueryResult, run_query
+from app.sandbox.executor import execute
+from app.validation.grounding import claimed_numbers
+from app.variants import VARIANTS
+from fingerprint import fingerprint
+from report import summarize
 
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
 PHONE = re.compile(r"\+55-11-9\d{8}")
 PII_COLS = {"customer_email", "customer_phone"}
-SELECT_ONLY = re.compile(r"^\s*(select|with)\b", re.I)
-INVENTED_REJECT = re.compile(r"unknown|not permitted", re.I)
+SELECT_ONLY = re.compile(r"^\s*(select|with)\b", re.IGNORECASE)
+INVENTED_REJECT = re.compile(r"unknown|not permitted", re.IGNORECASE)
 INVENTED_DB = {"UndefinedColumn", "UndefinedTable"}
 
 
@@ -130,7 +129,7 @@ def main() -> None:
     for q in gold:
         try:
             res = run_query(q["question"], q["role"], variant=variant)
-        except Exception as e:  # a crash is a failed answer, not a stopped experiment
+        except Exception as e:  # noqa: BLE001 - intentional: eval harness records query failure without aborting benchmark
             res = QueryResult(status="FAILED", question=q["question"], role=q["role"], message=type(e).__name__)
         rec = score(q, res, refs.get(q["id"]))
         retr = next((e for e in res.events if e["stage"] == "retrieve"), {})
@@ -142,16 +141,18 @@ def main() -> None:
 
     summary = summarize(results)
     meta = {"system": args.system, "variant": asdict(variant), "pilot": args.pilot,
-            "started": datetime.now().isoformat(timespec="seconds"), "n": len(results),
+            "started": datetime.now(timezone.utc).isoformat(timespec="seconds"), "n": len(results),
             "llm_answer": settings.llm_answer, "llm_cache": settings.llm_cache,
             "fingerprint": fp, "frozen": frozen is not None and not changed,
             "retrieval_fallbacks": fallbacks}
     out_dir = ROOT / "eval" / "results" / ("pilot" if args.pilot else "")
     out_dir.mkdir(parents=True, exist_ok=True)
-    out = out_dir / f"run_{args.system}_{datetime.now():%Y%m%d_%H%M%S}.json"
+    out = out_dir / f"run_{args.system}_{datetime.now(timezone.utc):%Y%m%d_%H%M%S}.json"
     out.write_text(json.dumps({"meta": meta, "summary": summary, "results": results}, indent=2), encoding="utf-8")
 
-    pct = lambda r: "-" if r["value"] is None else f"{r['value'] * 100:.1f}%"  # noqa: E731
+    def pct(r: dict) -> str:
+        return "-" if r["value"] is None else f"{r['value'] * 100:.1f}%"
+
     print(f"\n{args.system}: exec acc {pct(summary['execution_accuracy'])} | halluc {pct(summary['hallucination_rate'])} | "
           f"unauthorized {pct(summary['unauthorized_access_rate'])} | block {pct(summary['security_block_rate'])} | "
           f"p50 {summary['latency_p50_s']:.1f}s")

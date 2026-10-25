@@ -1,5 +1,4 @@
 import pytest
-
 from app.retrieval.retriever import Retriever, rrf
 from app.semantic.loader import load_semantic
 

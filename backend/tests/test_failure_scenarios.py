@@ -1,12 +1,11 @@
 import psycopg
 import pytest
-from fastapi.testclient import TestClient
-
 from app.config import settings
+from app.generation.llm import LLMError
 from app.governance import tools
 from app.governance.policy import approval_reason
 from app.pipeline import BLOCKED, CANNOT_ANSWER, CLARIFY, COMPLETED, FAILED, PENDING_APPROVAL, run_query
-from app.generation.llm import LLMError
+from fastapi.testclient import TestClient
 
 try:
     psycopg.connect(settings.admin_conninfo(), connect_timeout=3).close()

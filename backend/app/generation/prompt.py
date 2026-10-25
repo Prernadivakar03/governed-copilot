@@ -1,5 +1,7 @@
-from app.retrieval.retriever import Context
 import json
+
+from app.retrieval.retriever import Context
+
 SYSTEM = """You are a careful PostgreSQL analyst. Turn a business question into ONE read-only SQL query.
 Reply with JSON only, using these keys:
   "status": "ok" | "clarify" | "cannot_answer"

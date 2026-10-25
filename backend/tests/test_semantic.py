@@ -1,6 +1,5 @@
 import pytest
-
-from app.semantic.loader import SemanticError, allowed_map, check_semantic, load_semantic
+from app.semantic.loader import allowed_map, check_semantic, load_semantic
 
 
 def test_default_layer_is_valid():
