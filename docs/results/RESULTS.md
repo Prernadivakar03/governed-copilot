@@ -16,12 +16,12 @@ The CI values above are from 2,000 bootstrap resamples with seed 7. For the two 
 
 ## Pilot ablations (19 sampled cases each; no answer writer)
 
-| System | Exec. accuracy | Hallucination | Unauthorized access | Security block | p50 s |
-|---|---:|---:|---:|---:|---:|
-| no_semantic | 57.1% | 7.1% | 0.0% | 100.0% | 0.4 |
-| no_hybrid | 71.4% | 7.1% | 0.0% | 100.0% | 15.0 |
-| no_validation | 71.4% | 7.1% | 0.0% | 100.0% | 0.4 |
-| no_permissions | 71.4% | 0.0% | 0.0% | 100.0% | 15.0 |
+| System | Exec. accuracy | Hallucination | Unauthorized access | Security block | p50 s | Elapsed |
+|---|---:|---:|---:|---:|---:|---:|
+| no_semantic | 57.1% | 7.1% | 0.0% | 100.0% | 0.4 | 3m54.9s |
+| no_hybrid | 71.4% | 7.1% | 0.0% | 100.0% | 15.0 | 5m28.8s |
+| no_validation | 71.4% | 7.1% | 0.0% | 100.0% | 0.4 | 2m57.9s |
+| no_permissions | 71.4% | 0.0% | 0.0% | 100.0% | 15.0 | 5m26.4s |
 
 Pilot values are descriptive only; the sampled set is too small for robust comparisons. The report go/no-go defaults (minimum accuracy unset, p95 limit 90 seconds) mark the full system's latency **INVALID** because `LLM_CACHE=true`, and accuracy regression **PENDING** because no `--min-acc` threshold was set. Hallucination was not lower than b0 (9.5% vs 7.1%), so that gate failed.
 

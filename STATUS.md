@@ -12,6 +12,7 @@ Status reflects repository evidence as of 26 October 2026. `DONE` means the arti
 | Research package | NOT DONE | [docs/REPORT_DRAFT.md](docs/REPORT_DRAFT.md) lists related-work topics, but real papers and citations remain for the author. |
 | Engineering evidence | DONE | [docs/openapi.json](docs/openapi.json), [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md), backend test suite, Ruff, and frontend lint/build evidence. |
 | Evaluation dossier | PARTIAL | [docs/results/RESULTS.md](docs/results/RESULTS.md), [docs/results/FAILURE_ANALYSIS.md](docs/results/FAILURE_ANALYSIS.md), and [docs/SYSTEM_CARD.md](docs/SYSTEM_CARD.md). Evaluation gates include a failure and invalid/pending checks; all ablations need full-set reruns. |
+| Frontend polish | PARTIAL | `frontend/src/pages/Ask.tsx`, `frontend/src/index.css`, `frontend/src/App.tsx`, and `frontend/public/governed-mark.svg` implement the refreshed Ask flow, theme persistence, logo, and responsive tokens. Dedicated confirmation dialogs, skeleton states, KPI refinements across every page, and a measured WCAG AA audit remain incomplete. |
 | Deployable demo | PARTIAL | Compose configuration and frontend/backend build exist, and local dependencies responded. A complete fresh-start user demo and video were not verified. |
 
 ## Evaluation actually completed
