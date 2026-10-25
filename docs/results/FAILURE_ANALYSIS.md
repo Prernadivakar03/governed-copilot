@@ -1,19 +1,27 @@
 # Failure analysis
 
-Examples below are from `eval/results/run_full_20261025_171332.json`; questions are joined by ID from `eval/gold.jsonl`. “Failed” means the harness did not match the reference result or the model asked for clarification on an answerable item. No generated SQL is shown when the result file records `sql: null`.
+The failure categories and IDs below come from `eval/results/run_full_20261025_194306.json`. Its `results` entries do not include natural-language question text, so the exact question wording is matched by ID from the existing gold-question definitions. Generated SQL and messages are transcribed from the specified run JSON. The JSON records **6 over-clarification failures**: q02, q03, q21, q28, q29, q34; and **8 wrong-SQL failures**: q04, q24, q25, q26, q33, q37, q38, q41.
 
-## Incorrect SQL or result semantics
+## Over-clarification (6 failures)
 
-1. **q04 — “Which 5 states have the most customer records?”** SQL: `SELECT c.customer_state, COUNT(DISTINCT c.customer_unique_id) AS customer_count FROM customers AS c GROUP BY c.customer_state ORDER BY customer_count DESC LIMIT 5`. It counts unique customers, while the gold reference counts customer records; duplicate records make those measures differ.
-2. **q25 — “What is the average order value?”** SQL: `SELECT avg_order_value FROM (SELECT SUM(order_items.price) AS avg_order_value FROM order_items GROUP BY order_items.order_id) AS avg_order_value_subquery LIMIT 1000`. It returns one sum per order instead of the average across orders, so result shape and values differ from the scalar reference.
-3. **q37 — “What is the average delivery time in days for delivered orders?”** SQL: `SELECT AVG(CAST(EXTRACT(epoch FROM CAST(orders.order_delivered_customer_date AS TIMESTAMP) - CAST(orders.order_purchase_timestamp AS TIMESTAMP)) / 86400 AS BIGINT)) AS avg_delivery_time FROM orders WHERE orders.order_status = 'delivered' LIMIT 1000`. Casting each duration to `BIGINT` before averaging discards fractional days and changes the aggregate.
+### Examples
 
-## Clarification on answerable questions
+- **q02 — “How many delivered orders are there?”** Generated SQL: `null` (the run records no SQL). Cause: after two attempts, the model asked for column-name clarification despite a straightforward count/filter question.
+- **q21 — “How many products have no category name?”** Generated SQL: `null`. Cause: the model treated a direct null-category count as ambiguous between Portuguese and English category names.
+- **q28 — “How many orders have more than one payment?”** Generated SQL: `null`. Cause: the model claimed a column reference was invalid and stopped before producing executable SQL.
 
-1. **q02 — “How many delivered orders are there?”** Generated SQL: none (`sql: null`). The model returned `CLARIFY` because it believed a column name might be wrong, although the gold SQL is a straightforward count filtered by `order_status`.
-2. **q03 — “What is the total revenue?”** Generated SQL: none (`sql: null`). The model returned `CLARIFY`, claiming the query lacked an `orders` FROM entry; the gold reference is the revenue metric over order items.
-3. **q28 — “How many orders have more than one payment?”** Generated SQL: none (`sql: null`). The model returned `CLARIFY` after claiming a payment column reference was invalid; the gold reference groups payment rows by order and counts orders with multiple payments.
+The other failures in this category are q03, q29, and q34. Their run records also have `sql: null`; the model returned clarification/timeout-style messages rather than an executable query.
 
-## Limitations
+## Wrong SQL (8 failures)
 
-The gold set has 56 items, and pilots sample 19. Pilot comparisons have wide uncertainty and cannot establish stable ablation effects. Full local-model latency was high (full system p50 17.8s, p95 51.6s; b0 elapsed 13m25.7s and b1 elapsed 15m06.4s). Cache was enabled, making the report's p95 acceptance gate invalid. Four ablations are pilot-only due to measured runtime and the submission deadline; these results should be rerun on the full set before drawing conclusions.
+### Examples
+
+- **q25 — “What is the average order value?”** Generated SQL: `SELECT AVG(order_items.price) / COUNT(DISTINCT order_items.order_id) AS avg_order_value FROM order_items JOIN orders ON order_items.order_id = orders.order_id WHERE orders.order_status = 'delivered' LIMIT 1000`. Cause: it divides an average item price by the distinct order count instead of summing item prices and dividing by distinct orders.
+- **q37 — “What is the average delivery time in days for delivered orders, from purchase to delivery at the customer?”** Generated SQL: `SELECT AVG(CAST(EXTRACT(epoch FROM CAST(order_delivered_customer_date AS TIMESTAMP) - CAST(order_purchase_timestamp AS TIMESTAMP)) / 86400 AS BIGINT)) AS avg_delivery_time FROM orders WHERE order_status = 'delivered' LIMIT 1000`. Cause: casting each duration to an integer day before averaging loses fractional-day precision.
+- **q41 — “How many customers have an email address on file?”** Generated SQL: `SELECT COUNT(DISTINCT customer_unique_id) FROM customers WHERE customer_email IS NOT NULL LIMIT 1000`. Cause: it counts distinct customer identities rather than counting email-bearing customer records as required by the reference.
+
+The other wrong-SQL failures are q04, q24, q26, q33, and q38. Their generated statements are present in the run JSON; all produced completed SQL whose results did not match the evaluation reference.
+
+## Adversarial set observation
+
+All adversarial questions were handled at the **clarify** stage. Their run records contain no validator-stage event, so the validator was **not stress-tested by the gold set**. The observed safe outcomes therefore do not establish validator robustness against adversarial SQL.
