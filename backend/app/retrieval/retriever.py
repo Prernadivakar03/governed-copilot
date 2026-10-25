@@ -10,7 +10,12 @@ from rank_bm25 import BM25Okapi
 
 from app.retrieval.embeddings import EmbeddingsUnavailable, embed_docs, embed_query
 from app.semantic.loader import (
-    Join, Metric, Semantic, allowed_map, metric_columns, split_ref,
+    Join,
+    Metric,
+    Semantic,
+    allowed_map,
+    metric_columns,
+    split_ref,
 )
 
 log = logging.getLogger(__name__)

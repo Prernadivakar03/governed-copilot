@@ -2,10 +2,9 @@
 import hashlib
 
 import pandas as pd
+from app.config import ROOT, settings
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
-
-from app.config import ROOT, settings
 
 RAW = ROOT / "data" / "raw"
 

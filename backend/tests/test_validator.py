@@ -1,5 +1,4 @@
 import pytest
-
 from app.semantic.loader import allowed_map, load_semantic, restricted_names
 from app.validation.sql_validator import Rejected, validate
 

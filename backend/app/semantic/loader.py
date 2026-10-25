@@ -278,7 +278,7 @@ INJECTION_PATTERNS = [
     r"override\s+(the\s+)?(rules|policy|policies|validator|permissions?)",
     r"\bnew\s+instructions?\b",
 ]
-_INJECTION = re.compile("|".join(INJECTION_PATTERNS), re.I)
+_INJECTION = re.compile("|".join(INJECTION_PATTERNS), re.IGNORECASE)
 
 
 def scan_text_fields(sem: Semantic) -> list[str]:

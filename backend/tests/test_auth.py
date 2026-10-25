@@ -1,6 +1,5 @@
 import jwt
 import pytest
-
 from app.auth.security import create_token, decode_token, hash_password, verify_password
 
 

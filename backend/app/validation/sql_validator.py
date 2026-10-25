@@ -83,7 +83,7 @@ def validate(
     aliases = {a.alias.lower() for a in tree.find_all(exp.Alias) if a.alias}
     bad_alias = aliases & restricted
     if bad_alias:
-        raise Rejected(f"alias not permitted: {sorted(bad_alias)[0]}")
+        raise Rejected(f"alias not permitted: {min(bad_alias)}")
 
     # columns
     union_allowed = {c for t in query_tables for c in allowed[t]}

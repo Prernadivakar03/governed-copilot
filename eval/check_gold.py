@@ -1,4 +1,4 @@
-"""Validate gold.jsonl before using it.   Usage (repo root):  python eval\check_gold.py"""
+r"""Validate gold.jsonl before using it.   Usage (repo root):  python eval\check_gold.py"""
 import json
 import sys
 import time
@@ -8,7 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from app.sandbox.executor import execute  # noqa: E402
+import psycopg
+from app.sandbox.executor import execute
 
 gold = [json.loads(line) for line in (ROOT / "eval" / "gold.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
 problems: list[str] = []
@@ -27,7 +28,7 @@ for q in gold:
         t0 = time.perf_counter()
         try:
             ex = execute(q["reference_sql"], q["role"], max_rows=100000, timeout_ms=60000)
-        except Exception as e:
+        except psycopg.Error as e:
             problems.append(f"{q['id']}: reference SQL failed: {str(e).splitlines()[0]}")
             continue
         if not ex.rows or all(v is None for v in ex.rows[0]):

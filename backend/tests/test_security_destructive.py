@@ -1,6 +1,5 @@
 import psycopg
 import pytest
-
 from app.config import settings
 from app.sandbox.executor import execute
 from app.semantic.loader import allowed_map, load_semantic, restricted_names

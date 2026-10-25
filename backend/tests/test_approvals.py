@@ -2,11 +2,10 @@ import uuid
 
 import psycopg
 import pytest
-
+from app import service
 from app.auth.models import User
 from app.db import connect
 from app.governance import approvals
-from app import service
 
 
 @pytest.fixture

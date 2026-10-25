@@ -36,13 +36,13 @@ class Settings(BaseSettings):
 
     def conninfo(self, user: str, password: str, timeout_ms: int | None = None) -> str:
         options = f"-c statement_timeout={timeout_ms}" if timeout_ms else None
-        kwargs = dict(
-            host=self.postgres_host,
-            port=self.postgres_port,
-            dbname=self.postgres_db,
-            user=user,
-            password=password,
-        )
+        kwargs = {
+            "host": self.postgres_host,
+            "port": self.postgres_port,
+            "dbname": self.postgres_db,
+            "user": user,
+            "password": password,
+        }
         if options:
             kwargs["options"] = options
         return make_conninfo(**kwargs)

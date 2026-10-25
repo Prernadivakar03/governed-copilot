@@ -15,9 +15,9 @@ from app.generation.llm import LLMError
 from app.generation.prompt import build_messages
 from app.governance.tools import MAX_ROWS, invoke
 from app.semantic.loader import load_semantic
-from app.variants import Variant, full_schema_context, strip_semantic
 from app.validation.grounding import sanity_flags, ungrounded_numbers
 from app.validation.sql_validator import Rejected
+from app.variants import Variant, full_schema_context, strip_semantic
 
 MAX_ATTEMPTS = 3
 

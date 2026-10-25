@@ -4,9 +4,8 @@ analyst_ro : everything except customers.customer_email / customer_phone
 steward_ro : everything
 """
 import psycopg
-from psycopg import sql
-
 from app.config import settings
+from psycopg import sql
 
 ROLES = {
     "analyst_ro": settings.analyst_ro_password,
