@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
 
+    frontend_url: str = "http://localhost:8080"
+
     analyst_ro_password: str = ""
     steward_ro_password: str = ""
 

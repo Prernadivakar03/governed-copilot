@@ -11,7 +11,7 @@ app = FastAPI(title="Governed Analytics Copilot")
 
 app.add_middleware(  # the React dev server (Part 3) runs on 5173
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[settings.frontend_url, "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["Authorization", "Content-Type"],
