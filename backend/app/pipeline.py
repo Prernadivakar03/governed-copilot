@@ -216,4 +216,3 @@ def execute_approved(sql: str, role: str) -> dict:
     rows = [[_jsonable(cell) for cell in row] for row in ex.rows]
     return {"columns": ex.columns, "rows": rows, "truncated": ex.truncated,
             "answer": _simple_answer(ex.columns, rows, ex.truncated)}
-                     
