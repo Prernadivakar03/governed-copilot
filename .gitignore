@@ -1,10 +1,12 @@
 .env
+.env.*
+!.env.example
 .venv/
 __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .cache/
-data/raw/
+data/
 eval/results/
 node_modules/
