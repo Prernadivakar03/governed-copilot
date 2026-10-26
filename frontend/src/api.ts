@@ -23,7 +23,7 @@ export interface DecisionOut {
 }
 export interface AuditEvent {
   id: number; ts: string; actor: string; actor_role: string; event: string;
-  query_id: string | null; hash: string;
+  query_id: string | null; hash: string; payload?: Record<string, unknown>;
 }
 export interface AuditVerify { ok: boolean; checked?: number; head?: string; reason?: string; broken_at?: number }
 

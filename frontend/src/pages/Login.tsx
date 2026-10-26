@@ -30,9 +30,9 @@ export default function Login() {
 
   return (
     <form className="card login stack" onSubmit={(e) => void submit(e)}>
-      <h1>Ledger</h1>
-      <input placeholder="Username" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} />
-      <input placeholder="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <div className="login-brand"><img src="/governed-mark.svg" alt="" /><div><h1>Governed Copilot</h1><p className="muted">Sign in to your workspace</p></div></div>
+      <label htmlFor="username">Username</label><input id="username" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} />
+      <label htmlFor="password">Password</label><input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
       {error && <div className="error">{error}</div>}
       <button disabled={busy || !username || !password}>{busy ? "Signing in…" : "Sign in"}</button>
     </form>

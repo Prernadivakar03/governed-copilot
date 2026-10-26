@@ -12,7 +12,7 @@ export const home = (role: Role) => (role === "auditor" ? "/audit" : "/ask");
 
 function Guard({ roles, children }: { roles: Role[]; children: ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <p className="muted page">Loading…</p>;
+  if (loading) return <div className="card skeleton" role="status" aria-label="Loading workspace"><span /><span /><span /></div>;
   if (!user) return <Navigate to="/login" replace />;
   if (!roles.includes(user.role)) return <Navigate to={home(user.role)} replace />;
   return <>{children}</>;

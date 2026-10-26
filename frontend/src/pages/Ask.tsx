@@ -4,10 +4,10 @@ import { api, errorMessage, streamEvents, type PipelineEvent, type QueryDetail }
 const steps = ["retrieve", "generate", "validate", "gate", "execute", "summarize"] as const;
 const labels: Record<string, string> = { retrieve: "Retrieve", generate: "Write SQL", validate: "Validate", gate: "Gate", execute: "Execute", summarize: "Check" };
 const examples = [
-  "How many orders are there?",
-  "What are the top 5 product categories by revenue? Use English names.",
-  "What is the average order value?",
-  "What is the total revenue for each year? Show the year as a number.",
+  "Summarize quarterly revenue by region.",
+  "Which service tier has the most active subscriptions?",
+  "Compare average delivery time across carrier groups.",
+  "Show monthly support requests by team.",
 ];
 const statusClass = (s: string) => s === "COMPLETED" ? "ok" : s === "PENDING_APPROVAL" || s === "CLARIFY" || s === "CANNOT_ANSWER" ? "warn" : "bad";
 const cell = (v: unknown) => v === null || v === undefined ? "" : String(v);
@@ -21,6 +21,12 @@ export default function Ask() {
   const [elapsed, setElapsed] = useState(0);
   const [sort, setSort] = useState<{ col: number; asc: boolean } | null>(null);
   const result = detail?.result;
+  const textIndex = result?.columns.findIndex((_, i) => result.rows.some((row) => typeof row[i] === "string")) ?? -1;
+  const numberIndex = result?.columns.findIndex((_, i) => result.rows.some((row) => typeof row[i] === "number")) ?? -1;
+  const chartRows = result && textIndex >= 0 && numberIndex >= 0 && textIndex !== numberIndex
+    ? result.rows.filter((row) => typeof row[textIndex] === "string" && typeof row[numberIndex] === "number").slice(0, 10)
+    : [];
+  const maxValue = Math.max(1, ...chartRows.map((row) => Number(row[numberIndex])));
 
   useEffect(() => {
     if (!busy) return;
@@ -65,11 +71,12 @@ export default function Ask() {
     <form className="card stack" onSubmit={(e) => void submit(e)}>
       <label htmlFor="question">Ask an analytics question</label>
       <textarea id="question" className="question-box" placeholder="Ask about orders, revenue, products, customers…" value={question} maxLength={500} onChange={(e) => setQuestion(e.target.value)} onKeyDown={(e) => { if (e.ctrlKey && e.key === "Enter") e.currentTarget.form?.requestSubmit(); }} />
-      <div className="muted">Queries can take up to a minute on a local model. Press Ctrl+Enter to submit.</div>
+      <div className="muted">Can take up to a minute on a local model. Press Ctrl+Enter to submit.</div>
       <div className="examples" aria-label="Example questions">{examples.map((q) => <button key={q} className="ghost chip-button" type="button" onClick={() => setQuestion(q)}>{q}</button>)}</div>
       <div className="row"><button disabled={busy || question.trim().length < 3}>{busy ? "Working…" : "Ask"}</button>{busy && <span className="badge warn">{executionTime}s elapsed</span>}</div>
     </form>
     {error && <p className="error" role="alert">{error}</p>}
+    {busy && events.length === 0 && <div className="card skeleton" role="status" aria-label="Loading query progress"><span /><span /><span /></div>}
     {(events.length > 0 || busy) && <>
       <h2>Query progress</h2>
       <ol className="stepper">{steps.map((step, i) => {
@@ -82,14 +89,19 @@ export default function Ask() {
     {detail && <>
       <h2>Answer</h2><section className="card stack answer-card"><span className={`badge ${statusClass(detail.status)}`}>{detail.status}</span>
         {result?.answer && <div>{result.answer}</div>}
+        {detail.status === "COMPLETED" && detail.message && <div className="assumption"><b>Assumption</b><span>{detail.message}</span></div>}
         {detail.status === "PENDING_APPROVAL" && <div>Sent to a steward for approval: {detail.message}</div>}
         {detail.status !== "COMPLETED" && detail.status !== "PENDING_APPROVAL" && detail.message && <div>{detail.message}</div>}
         {result?.notes?.map((n, i) => <div key={i} className="muted">{n}</div>)}
         {result?.flags?.map((f, i) => <div key={i} className="badge warn">{f}</div>)}
         {!!result?.source_ids?.length && <div className="examples">{result.source_ids.map((id) => <span key={id} className="chip">{id}</span>)}</div>}
       </section>
-      {detail.sql && <><h2>SQL</h2><section className="card"><div className="row sql-actions"><button className="ghost" onClick={() => void navigator.clipboard.writeText(detail.sql ?? "")}>Copy SQL</button></div><pre className="sql">{detail.sql}</pre></section></>}
+      {detail.sql && <><h2>SQL</h2><section className="card"><details><summary>View generated SQL</summary><div className="row sql-actions"><button className="ghost" onClick={() => void navigator.clipboard.writeText(detail.sql ?? "")}>Copy SQL</button></div><pre className="sql">{detail.sql}</pre></details></section></>}
       {result && result.rows.length > 0 && <><div className="row section-row"><h2>Results ({result.rows.length})</h2><button className="ghost" onClick={downloadCsv}>Download CSV</button></div><div className="tablewrap"><table><thead><tr>{result.columns.map((c, i) => <th key={c}><button className="sort-button" onClick={() => setSort((s) => ({ col: i, asc: s?.col === i ? !s.asc : true }))}>{c}{sort?.col === i ? sort.asc ? " ↑" : " ↓" : " ↕"}</button></th>)}</tr></thead><tbody>{orderedRows.slice(0, 200).map((row, i) => <tr key={i}>{row.map((v, j) => <td key={j} className={typeof v === "number" ? "num" : ""}>{cell(v)}</td>)}</tr>)}</tbody></table></div>{(result.truncated || result.rows.length > 200) && <p className="muted">Showing {Math.min(result.rows.length, 200)} rows.</p>}</>}
+      {result && result.rows.length === 0 && <p className="muted">No result rows were returned.</p>}
+      {chartRows.length > 0 && <><h2>{result?.columns[numberIndex]} by {result?.columns[textIndex]}</h2><section className="card chart-card"><svg viewBox={`0 0 680 ${Math.max(100, chartRows.length * 32 + 12)}`} role="img" aria-label={`${result?.columns[numberIndex]} by ${result?.columns[textIndex]}`}>
+        {chartRows.map((row, i) => { const y = 8 + i * 32; const width = Number(row[numberIndex]) / maxValue * 440; return <g key={`${row[textIndex]}-${i}`}><text x="0" y={y + 17} className="chart-label">{cell(row[textIndex]).slice(0, 24)}</text><rect x="205" y={y} width={Math.max(2, width)} height="22" rx="4" className="chart-bar"/><text x={215 + width} y={y + 17} className="chart-value">{cell(row[numberIndex])}</text></g>; })}
+      </svg></section></>}
     </>}
   </>;
 }

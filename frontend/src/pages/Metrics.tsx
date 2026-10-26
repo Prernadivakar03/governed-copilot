@@ -4,7 +4,7 @@ import { api, errorMessage, type EvalRun, type MetricsSummary, type Rate } from 
 const pct = (r?: Rate) => (r?.value == null ? "–" : `${(r.value * 100).toFixed(1)}%`);
 const ci = (r?: Rate) =>
   r?.value == null || r.lo == null || r.hi == null ? "" : ` [${(r.lo * 100).toFixed(0)}–${(r.hi * 100).toFixed(0)}]`;
-const ms = (v: number | null | undefined) => (v == null ? "–" : `${Math.round(v)} ms`);
+const ms = (v: number | null | undefined) => (v == null ? "Unavailable" : `${Math.round(v)} ms`);
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -19,6 +19,7 @@ export default function Metrics() {
   const [m, setM] = useState<MetricsSummary | null>(null);
   const [runs, setRuns] = useState<EvalRun[]>([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     void (async () => {
@@ -28,6 +29,8 @@ export default function Metrics() {
         setRuns(b);
       } catch (err) {
         setError(errorMessage(err));
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);
@@ -38,6 +41,8 @@ export default function Metrics() {
     <>
       <h1>Metrics</h1>
       {error && <p className="error">{error}</p>}
+      {loading && <div className="card skeleton" role="status" aria-label="Loading metrics"><span /><span /><span /></div>}
+      {!loading && !m && <p className="muted">Live metrics are unavailable until the backend responds.</p>}
       {m && (
         <>
           <div className="cards">
@@ -76,7 +81,7 @@ export default function Metrics() {
       )}
 
       <h2>Evaluation runs</h2>
-      {runs.length === 0 ? (
+      {!loading && runs.length === 0 ? (
         <p className="muted">No evaluation runs yet. Run python eval\run_eval.py full</p>
       ) : (
         <div className="tablewrap">
