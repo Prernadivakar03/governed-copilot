@@ -17,7 +17,7 @@ def test_prompt_keeps_context_and_instruction_boundaries():
 def test_prompt_has_three_generic_examples():
     assert SYSTEM.count("Question:") == 3
     assert "net sales by month" in SYSTEM
-    assert "product category" in SYSTEM
+    assert "warehouse region" in SYSTEM
     assert "selected period" in SYSTEM
 
 
