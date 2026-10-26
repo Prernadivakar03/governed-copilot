@@ -5,7 +5,6 @@ from pathlib import Path
 
 import numpy as np
 
-
 CLARIFY = {"CLARIFY", "CLARIFYING", "NEEDS_CLARIFICATION"}
 
 
@@ -23,8 +22,8 @@ def compare(v1: dict, v2: dict, bootstrap: int = 10_000, seed: int = 17) -> dict
                       for _, old, new in paired])
     rng = np.random.default_rng(seed)
     means = rng.choice(delta, size=(bootstrap, len(delta)), replace=True).mean(axis=1)
-    fixed = int(np.sum((delta > 0)))
-    broken = int(np.sum((delta < 0)))
+    fixed = int(np.sum(delta > 0))
+    broken = int(np.sum(delta < 0))
     unchanged = int(np.sum(delta == 0))
     per_question = [{"id": key, "v1_ok": bool(old.get("ok")), "v2_ok": bool(new.get("ok")),
                      "outcome": "fixed" if new.get("ok") and not old.get("ok") else
@@ -61,7 +60,6 @@ def main() -> None:
     ap.add_argument("v2", type=Path, help="v2 full run result JSON")
     ap.add_argument("--bootstrap", type=int, default=10_000)
     args = ap.parse_args()
-    old_run = json.loads(args.v1.read_text(encoding="utf-8"))
     new_run = json.loads(args.v2.read_text(encoding="utf-8"))
     report = compare(load(args.v1), load(args.v2), args.bootstrap)
     v2_summary = new_run.get("summary", {})
