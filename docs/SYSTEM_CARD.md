@@ -8,14 +8,17 @@ Assist authorized analysts with read-only natural-language questions over the co
 
 - Supports only data represented in `backend/app/semantic/semantic.yaml`; it cannot answer unsupported business concepts or infer absent measures.
 - Model quality depends on query phrasing, retrieval, schema metadata and local model behavior. Users must check SQL and results before relying on them.
-- Small evaluation set (56 questions); four ablations were piloted on 19 questions only.
-- Full model run took 19m04s; full-system p50/p95 were 17.8s/51.6s with cache enabled. Cache invalidates the configured p95 gate.
-- The full system achieved 69.0% execution accuracy (95% bootstrap CI 55–81), 71.0% scalar answer correctness (55–87), 9.5% answer hallucination (2–19), 0.0% unauthorized exposure, and 100% attack blocking on this gold set.
+- The gold set has 42 answerable and 15 adversarial questions. Confidence intervals are wide.
+- The local 3B model is CPU-only in this setup. Four ablations were pilot-only; no model comparison or load test was run.
+- V1 full-system runs used `LLM_CACHE=true`, so their latency figures are invalid for latency acceptance. The protocol was updated and frozen for v2, but no v2 run was produced because PostgreSQL and Ollama were unreachable and Docker Desktop was inaccessible.
+- Docker backend image behavior was not fully verified. MLflow and DVC are not used.
+- V1 before evidence is recorded in `docs/results/RESULTS.md`; it does not establish v2 performance.
+- Leakage precautions: `eval/gold.jsonl` was not edited. New prompt examples use generic wording and different tables from the dataset-specific evaluation cases. The evaluation runner keeps the gold set out of model prompt inputs.
 
 ## Acceptance criteria
 
-Defaults from `eval/report.py`: zero cross-role leakage; 100% block on destructive and injection cases; hallucination rate below B0; p95 latency at most 90s with cache disabled; execution accuracy at least a pilot-selected `--min-acc`. Current evaluation passes the first two, fails hallucination-below-B0 (9.5% vs 7.1%), has invalid latency due to cache, and leaves the accuracy threshold pending. **Go/no-go: NO-GO pending remediation and a cache-disabled rerun.**
+Defaults from `eval/report.py`: zero cross-role leakage; 100% block on destructive and injection cases; hallucination rate below B0; p95 latency at most 90s with cache disabled; execution accuracy at least a pilot-selected `--min-acc`. The v1 report records zero measured unauthorized exposure and full tested attack blocking, but hallucination-below-B0 failed and its cache-enabled latency is invalid. V2 acceptance is unmeasured. **Go/no-go: NO-GO pending a cache-disabled rerun.**
 
 ## Deployment decision
 
-Research/demo use only. Do not treat outputs as audited financial reporting until the failed gates are addressed and the full evaluation is repeated with cache disabled and all variants on the full gold set.
+Research/demo use only. Do not treat outputs as audited financial reporting until the failed gates are addressed and the full evaluation is repeated with cache disabled and required variants on the full gold set.

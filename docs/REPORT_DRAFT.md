@@ -23,15 +23,15 @@ The React client calls a FastAPI service. The service filters semantic metadata 
 
 ## Method
 
-The evaluation harness freezes fingerprints for the gold set, semantic layer, prompt, model, and variants. It compares generated query results with reference SQL, tests refusal/security cases, measures latency and answer grounding, and bootstraps 95% confidence intervals with 2,000 samples (seed 7). **TODO:** document dataset provenance, hardware, exact environment versions, and a reproducibility procedure.
+The evaluation harness freezes fingerprints for the gold set, semantic layer, prompt, model, and variants. It compares generated query results with reference SQL, tests refusal/security cases, measures latency and answer grounding, and bootstraps 95% confidence intervals with 2,000 samples (seed 7). The gold set has 42 answerable and 15 adversarial questions, so confidence intervals are wide. Leakage precautions: `eval/gold.jsonl` was left unchanged; the prompt examples are generic, use different tables and phrasing, and do not reproduce evaluation questions; model prompts are built from the user's question and role-filtered semantic context. **TODO:** document dataset provenance, hardware, exact environment versions, and a reproducibility procedure.
 
 ## Experiments and results
 
-The initial full pilot sampled 19 questions and took 2m38.8s. The full-system full-set run reported 69.0% execution accuracy (95% CI 55–81), 71.0% scalar correctness (55–87), 9.5% answer hallucination (2–19), 0.0% unauthorized exposure, 100.0% attack blocking, p50 17.8s and p95 51.6s. The full run elapsed 19m04s with caching enabled. Full-set b0 and b1 runs used `--no-answer`; their execution accuracies were 64.3% and 69.0%. Four ablations were pilot-only (19 cases each). Full table, ablation values, commands and gate outcomes are in `results/RESULTS.md`.
+V1 before evidence and its source runs are summarized in `results/RESULTS.md`. V1 full runs used caching; their latency is invalid for acceptance. V2's new prompt fingerprint is frozen, but the required full, b1, and answer-writer runs could not be performed because PostgreSQL at localhost:5432 and Ollama at localhost:11434 were unreachable and Docker Desktop access was denied. No v2 accuracy, correctness, grounding, security, or latency number is available. Do not compare v1 and v2 as if both had been measured.
 
 ## Limitations
 
-The small gold set produces broad uncertainty. Four ablations are sampled only; full comparisons are not available. The full system did not beat B0 on hallucination rate. Latency acceptance is invalid because caching was enabled, and no execution-accuracy threshold was selected. **TODO:** run all seven variants on the full set with a cache-disabled latency configuration and a predeclared accuracy threshold. Local CPU/model latency is substantial.
+The small gold set produces broad uncertainty. Four ablations are pilot-only; no model comparison or load test was run. The CPU-only 3B model can be slow. V1 did not beat B0 on hallucination rate, and its cache-enabled latency is invalid. No execution-accuracy threshold was selected. The Docker backend image was not fully verified. MLflow and DVC are not used. **TODO:** restore PostgreSQL and Ollama, run the frozen v2 protocol with cache disabled and a predeclared accuracy threshold, and analyze the actual result files. Do not fill v2 result gaps with estimates.
 
 ## Conclusion
 
@@ -39,7 +39,7 @@ The prototype demonstrates layered query governance and achieved zero measured c
 
 ## TODO before submission
 
+- Literature review: find and verify sources on text-to-SQL evaluation, retrieval for structured data, SQL validation and least privilege, human approval, answer grounding, and prompt injection.
 - Replace this draft with the final report structure and institution-specific formatting.
-- Add verified citations and compare against relevant systems.
 - Add hardware/environment details, contribution statement, and reproducibility notes.
-- Explain failed gates and planned remediation with adviser feedback.
+- Explain measured gates and planned remediation with adviser feedback after v2 runs finish.
