@@ -29,8 +29,8 @@ FEW_SHOT_EXAMPLES = """Generic examples:
 Question: What is net sales by month?
 Context defines net_sales and an order date. Use net_sales grouped by month; if no
 date range is supplied, use all available dates and state that assumption.
-Question: Which product category has the most units sold?
-Context includes category and units sold. Return categories ordered by units sold
+Question: Which warehouse region had the most returned units?
+Context includes region and returned units. Return regions ordered by returned units
 descending; use the first row as the highest and state the ranking assumption.
 Question: How many units were sold in the selected period?
 Context includes units sold, but no selected period or date filter is provided
