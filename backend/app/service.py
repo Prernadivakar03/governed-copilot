@@ -63,6 +63,7 @@ def process_query(user: User, question: str, qid: str, on_event=None) -> dict:
             "notes": res.notes,
             "flags": res.flags,
             "hallucination_flag": res.hallucination_flag,
+            "claim_mismatch": res.claim_mismatch,
             "retrieved_tables": next((e.get("tables") for e in res.events
                                       if e["stage"] == "retrieve"), []),
             "validator": [e for e in res.events if e["stage"] == "validate"],

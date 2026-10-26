@@ -125,6 +125,7 @@ export interface MetricsSummary {
   total: number; by_status: Record<string, number>; success_rate: number; block_rate: number;
   latency_p50_ms: number | null; latency_p95_ms: number | null;
   approvals_pending: number; hallucination_flags: number; denied_events: number;
+  claim_mismatch_count: number;
   per_day: { day: string; total: number; completed: number }[];
 }
 export interface EvalRun {

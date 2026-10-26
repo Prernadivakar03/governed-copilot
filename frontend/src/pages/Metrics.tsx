@@ -53,6 +53,7 @@ export default function Metrics() {
             <Stat label="Latency p95" value={ms(m.latency_p95_ms)} />
             <Stat label="Awaiting approval" value={String(m.approvals_pending)} />
             <Stat label="Hallucination flags" value={String(m.hallucination_flags)} />
+            <Stat label="Claim mismatches" value={String(m.claim_mismatch_count)} />
             <Stat label="Denied attempts" value={String(m.denied_events)} />
           </div>
 
