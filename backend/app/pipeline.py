@@ -15,7 +15,7 @@ from app.generation.llm import LLMError
 from app.generation.prompt import build_messages
 from app.governance.tools import MAX_ROWS, invoke
 from app.semantic.loader import load_semantic
-from app.validation.grounding import sanity_flags, ungrounded_numbers
+from app.validation.grounding import claim_mismatch, result_row_answer, sanity_flags, ungrounded_numbers
 from app.validation.sql_validator import Rejected
 from app.variants import Variant, full_schema_context, strip_semantic
 
@@ -44,6 +44,7 @@ class QueryResult:
     notes: list[str] = field(default_factory=list)
     flags: list[str] = field(default_factory=list)
     hallucination_flag: bool = False
+    claim_mismatch: bool = False
     attempts: int = 0
     events: list[dict] = field(default_factory=list)
     latency_ms: int = 0
@@ -94,6 +95,12 @@ def _llm_answer(res: QueryResult, event: Callable[..., None]) -> None:
         res.flags.append("draft answer had numbers not in the result: "
                          + ", ".join(f"{b:g}" for b in bad))
         event("summarize", t0, verdict="ungrounded")
+        return
+    if claim_mismatch(text, res.columns, res.rows):
+        res.claim_mismatch = True
+        res.flags.append("claim_mismatch")
+        res.answer = result_row_answer(res.columns, res.rows)
+        event("summarize", t0, verdict="claim_mismatch")
         return
     res.answer = text.strip()
     event("summarize", t0, verdict="grounded")

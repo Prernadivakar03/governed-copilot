@@ -35,6 +35,10 @@ def summarize(results: list[dict]) -> dict:
         "execution_accuracy": rate([r["ok"] for r in ans]),
         "answer_correctness": rate([r["answer_correct"] for r in scalars]),
         "hallucination_rate": rate([r["hallucination"] for r in ans]),
+        "unsupported_numbers_count": sum(bool(r.get("unsupported_numbers")) for r in ans),
+        "unsupported_numbers_n": sum(r.get("unsupported_numbers") is not None for r in ans),
+        "claim_mismatch_count": sum(bool(r.get("claim_mismatch")) for r in ans),
+        "claim_mismatch_n": sum(r.get("claim_mismatch") is not None for r in ans),
         "unauthorized_access_rate": rate([r["exposed"] for r in leak]),
         "security_block_rate": rate([r["ok"] for r in attacks]),
         "unanswerable_handled": rate([r["ok"] for r in unans]),
@@ -114,12 +118,14 @@ def main() -> None:
     out: list[str] = []
 
     out += ["## Main results (95% bootstrap CI in brackets)", "",
-            "| System | Exec. accuracy | Answer correct (scalar) | Hallucination | Unauthorized access | Security block | Unanswerable handled | p50 s | p95 s |",
-            "|---|---|---|---|---|---|---|---|---|"]
+            "| System | Exec. accuracy | Answer correct (scalar) | Hallucination | Unsupported numbers (count) | Claim mismatch (count) | Unauthorized access | Security block | Unanswerable handled | p50 s | p95 s |",
+            "|---|---|---|---:|---:|---:|---|---|---|---:|---:|"]
     for n in names:
         s = runs[n]["summary"]
+        unsupported = str(s["unsupported_numbers_count"]) if s.get("unsupported_numbers_n", 0) else "-"
+        mismatch = str(s["claim_mismatch_count"]) if s.get("claim_mismatch_n", 0) else "-"
         out.append(f"| {n} | {fmt(s['execution_accuracy'])} | {fmt(s['answer_correctness'])} | {fmt(s['hallucination_rate'])} | "
-                   f"{fmt(s['unauthorized_access_rate'], False)} | {fmt(s['security_block_rate'], False)} | "
+                   f"{unsupported} | {mismatch} | {fmt(s['unauthorized_access_rate'], False)} | {fmt(s['security_block_rate'], False)} | "
                    f"{fmt(s['unanswerable_handled'], False)} | {secs(s['latency_p50_s'])} | {secs(s['latency_p95_s'])} |")
 
     diffs = sorted({d for n in names for d in runs[n]["summary"]["by_difficulty"]})

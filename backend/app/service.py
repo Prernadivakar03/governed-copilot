@@ -41,7 +41,8 @@ def process_query(user: User, question: str, qid: str, on_event=None) -> dict:
         result_json = json.dumps({
             "columns": res.columns, "rows": res.rows, "truncated": res.truncated,
             "answer": res.answer, "source_ids": res.source_ids, "flags": res.flags,
-            "notes": res.notes, "hallucination_flag": res.hallucination_flag})
+            "notes": res.notes, "hallucination_flag": res.hallucination_flag,
+            "claim_mismatch": res.claim_mismatch})
 
     with connect() as conn:
         conn.execute(

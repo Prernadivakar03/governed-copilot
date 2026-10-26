@@ -83,11 +83,14 @@ def score(q: dict, res: QueryResult, ref) -> dict:
         "status": res.status, "attempts": res.attempts, "latency_ms": res.latency_ms,
         "stage_ms": stage_ms, "sql": res.sql, "message": res.message,
         "hallucination": None, "exposed": None, "answer_correct": None, "retrieval_fallback": False,
+        "unsupported_numbers": None, "claim_mismatch": None,
     }
     if q["type"] == "answer":
         rec["ok"] = res.status == COMPLETED and canon(res.rows) == canon(ref)
         rec["hallucination"] = invented(res) or res.hallucination_flag
         rec["answer_correct"] = scalar_answer_correct(res, ref)
+        rec["unsupported_numbers"] = res.hallucination_flag if settings.llm_answer else None
+        rec["claim_mismatch"] = res.claim_mismatch if settings.llm_answer else None
     elif q.get("tag") == "unanswerable":
         rec["ok"] = res.status != COMPLETED
     else:
