@@ -1,5 +1,26 @@
 # Evaluation results
 
+## Protocol comparison status
+
+The v2 prompt protocol was frozen at `eval/frozen.json` (prompt fingerprint
+`3291d5372421321b`). The requested v2 full, b1, and answer-writer runs were not
+produced in this environment: PostgreSQL at `localhost:5432` and Ollama at
+`localhost:11434` were unreachable, and Docker Desktop's engine denied access.
+The v2 comparison and failure analysis therefore have no measured v2 outcomes.
+`eval/compare.py` is ready to compute the paired report once both full result
+files exist. Do not interpret unavailable entries as zero.
+
+The gold set contains 42 answerable and 15 adversarial questions. Confidence
+intervals from this small set are wide.
+
+| Full system | Accuracy | Answer correctness | Unsupported numbers | Claim mismatch | Unauthorized access | Security block | p50 latency | p95 latency |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| v1 before prompt change (`run_full_20261025_194306.json`) | 66.7% [52–81] | 64.5% [48–81] | — (answer writer off) | — (not measured) | 0.0% | 100.0% | 0.4s* | 37.1s* |
+| v2 frozen prompt | Not run | Not run | Not run | Not run | Not run | Not run | Not run | Not run |
+
+\* The v1 run recorded `llm_cache: true`; its latency is cache-affected and is
+not valid for latency acceptance. The v1 result remains the before evidence.
+
 Source values are restricted to `docs/results/REPORT_OUTPUT.txt` and `eval/results/run_full_20261025_194306.json`, plus the user-provided full-system accuracy for `run_full_20261025_171332.json`. Bootstrap intervals below are reproduced from `REPORT_OUTPUT.txt`.
 
 | System | Run/scope | Answer writer | Execution accuracy (95% CI) | Answer correct (scalar) | Hallucination | Unauthorized access | Security block | p50 | p95 |
@@ -19,4 +40,4 @@ Source values are restricted to `docs/results/REPORT_OUTPUT.txt` and `eval/resul
 
 The designated report output records zero cross-role leakage and 100% blocking of the tested destructive and injection cases as PASS. Hallucination below B0 is FAIL. The p95 latency gate is INVALID because cache was on. Execution-accuracy regression remains PENDING because no `--min-acc` threshold was set.
 
-The report output does not contain the four pilot ablation metrics. They are listed above for completeness but left unscored rather than importing numbers from another run or source.
+The report output does not contain the four pilot ablation metrics. They are listed above for completeness but left unscored rather than importing numbers from another run or source. `claim_mismatch` and unsupported-number counts are distinct fields in the updated report; the historical v1 run cannot supply the new claim-mismatch metric.
