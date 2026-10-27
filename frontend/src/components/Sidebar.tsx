@@ -12,9 +12,9 @@ import {
   Activity,
   Settings,
   ChevronLeft,
-  ChevronRight,
-  Shield
+  ChevronRight
 } from "lucide-react";
+import logoUrl from "../assets/logo.png";
 import type { Role } from "../api";
 
 interface SidebarProps {
@@ -59,8 +59,8 @@ export function Sidebar({ role, collapsed, onToggleCollapse }: SidebarProps) {
     <aside className={`app-sidebar ${collapsed ? "collapsed" : ""}`}>
       <div className="sidebar-header">
         <NavLink to="/overview" className="brand-link">
-          <div className="brand-mark">
-            <Shield size={16} />
+          <div className="brand-mark" style={{ background: "transparent", boxShadow: "none" }}>
+            <img src={logoUrl} alt="Governed Copilot" style={{ width: "28px", height: "28px", objectFit: "contain" }} />
           </div>
           {!collapsed && <span className="brand-text">Governed Copilot</span>}
         </NavLink>

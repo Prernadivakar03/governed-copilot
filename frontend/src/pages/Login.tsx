@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { Shield, Lock, User as UserIcon, ArrowRight, AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
+import { Lock, User as UserIcon, ArrowRight, AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
+import logoUrl from "../assets/logo.png";
 import { errorMessage } from "../api";
 import { useAuth } from "../authContext";
 
@@ -90,17 +91,14 @@ export default function Login() {
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
           <div
             style={{
-              width: "38px",
-              height: "38px",
-              borderRadius: "10px",
-              background: "linear-gradient(135deg, var(--accent), #1d4ed8)",
+              width: "44px",
+              height: "44px",
               display: "grid",
               placeItems: "center",
-              color: "white",
-              boxShadow: "0 2px 10px var(--accent-border)",
+              flexShrink: 0,
             }}
           >
-            <Shield size={22} />
+            <img src={logoUrl} alt="Governed Analytics" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           </div>
           <div>
             <h1 style={{ fontSize: "20px", margin: 0 }}>Governed Analytics</h1>

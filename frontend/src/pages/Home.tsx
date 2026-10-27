@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import logoUrl from "../assets/logo.png";
 import {
   Shield,
   Bot,
@@ -66,8 +67,8 @@ export default function Home() {
       <header className="home-navbar">
         <div className="home-nav-left">
           <div className="home-brand">
-            <div className="home-brand-icon">
-              <Shield size={20} />
+            <div className="home-brand-icon" style={{ background: "transparent", border: "none" }}>
+              <img src={logoUrl} alt="Governed Copilot" style={{ width: "28px", height: "28px", objectFit: "contain" }} />
             </div>
             <div>
               <span className="home-brand-title">Governed Copilot</span>
@@ -622,8 +623,8 @@ export default function Home() {
         <div className="footer-content">
           <div className="footer-brand-col">
             <div className="home-brand">
-              <div className="home-brand-icon">
-                <Shield size={18} />
+              <div className="home-brand-icon" style={{ background: "transparent", border: "none" }}>
+                <img src={logoUrl} alt="Governed Copilot" style={{ width: "26px", height: "26px", objectFit: "contain" }} />
               </div>
               <span className="home-brand-title">Governed Copilot</span>
             </div>

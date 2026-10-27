@@ -13,6 +13,7 @@ import {
   FastForward,
 } from "lucide-react";
 import { useAuth } from "../authContext";
+import logoUrl from "../assets/logo.png";
 import { api, type SystemStatus } from "../api";
 
 interface BootStage {
@@ -150,8 +151,8 @@ export default function Loading() {
           <div className="orbital-ring ring-outer" />
           <div className="orbital-ring ring-middle" />
           <div className="orbital-ring ring-inner" />
-          <div className="orbital-center-icon">
-            <Shield size={32} />
+          <div className="orbital-center-icon" style={{ background: "transparent" }}>
+            <img src={logoUrl} alt="Governed Analytics" style={{ width: "42px", height: "42px", objectFit: "contain" }} />
           </div>
         </div>
 
