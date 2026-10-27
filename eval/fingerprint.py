@@ -4,8 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = {
-    "gold_dev": "eval/gold_dev.jsonl",
-    "split": "eval/split.json",
+    "gold": "eval/gold.jsonl",
     "semantic": "backend/app/semantic/semantic.yaml",
     "prompt": "backend/app/generation/prompt.py",
     "llm": "backend/app/generation/llm.py",

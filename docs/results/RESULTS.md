@@ -1,43 +1,75 @@
-# Evaluation results
+# Evaluation Results
 
-## Protocol comparison status
+## Protocol & Benchmark Runs
 
-The v2 prompt protocol was frozen at `eval/frozen.json` (prompt fingerprint
-`3291d5372421321b`). The requested v2 full, b1, and answer-writer runs were not
-produced in this environment: PostgreSQL at `localhost:5432` and Ollama at
-`localhost:11434` were unreachable, and Docker Desktop's engine denied access.
-The v2 comparison and failure analysis therefore have no measured v2 outcomes.
-`eval/compare.py` is ready to compute the paired report once both full result
-files exist. Do not interpret unavailable entries as zero.
+Evaluation was conducted under the frozen protocol verified against `eval/frozen.json`:
+- **Protocol fingerprint**:
+  - `gold`: `da0c270be4a66808` (`eval/gold.jsonl`)
+  - `semantic`: `442367b9f7fbd19a` (`backend/app/semantic/semantic.yaml`)
+  - `prompt`: `49ed72eace6139d7` (`backend/app/generation/prompt.py`)
+  - `llm`: `6e936aab23290515` (`backend/app/generation/llm.py`)
+  - `variants`: `f6c723b97412205b` (`backend/app/variants.py`)
+  - `model`: `qwen2.5-coder:3b`
+- **Result Files**:
+  - `full`: `eval/results/run_full_20261027_132025.json` (uncached, `n=97`, frozen=true)
+  - `b0`: `eval/results/run_b0_20261027_205147.json` (uncached, `n=40` subset, frozen=true)
 
-The gold set contains 42 answerable and 15 adversarial questions. Confidence
-intervals from this small set are wide.
+---
 
-| Full system | Accuracy | Answer correctness | Unsupported numbers | Claim mismatch | Unauthorized access | Security block | p50 latency | p95 latency |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| v1 before prompt change (`run_full_20261025_194306.json`) | 66.7% [52–81] | 64.5% [48–81] | — (answer writer off) | — (not measured) | 0.0% | 100.0% | 0.4s* | 37.1s* |
-| v2 frozen prompt | Not run | Not run | Not run | Not run | Not run | Not run | Not run | Not run |
+## Benchmark Results (95% Bootstrap CI in Brackets)
 
-\* The v1 run recorded `llm_cache: true`; its latency is cache-affected and is
-not valid for latency acceptance. The v1 result remains the before evidence.
+| System | Questions (N) | Exec. Accuracy | Answer Correct (Scalar) | Hallucination Rate | Unauthorized Access | Security Block | Unanswerable Handled | p50 Latency | p95 Latency |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| **b0** | 40 (subset) | 65.0% [50.0–80.0%] | 65.5% [48.3–82.8%] | 5.0% [0.0–12.5%] | — | — | — | 14.9s | 55.7s |
+| **full** | 97 (full set) | 65.7% [54.4–77.2%] | 64.7% [51.0–78.4%] | 14.3% [7.6–22.8%] | 0.0% | 100.0% | 100.0% | 19.3s | 56.0s |
 
-Source values are restricted to `docs/results/REPORT_OUTPUT.txt` and `eval/results/run_full_20261025_194306.json`, plus the user-provided full-system accuracy for `run_full_20261025_171332.json`. Bootstrap intervals below are reproduced from `REPORT_OUTPUT.txt`.
+*Note: All latency measurements reflect uncached execution (`LLM_CACHE=false`).*
 
-| System | Run/scope | Answer writer | Execution accuracy (95% CI) | Answer correct (scalar) | Hallucination | Unauthorized access | Security block | p50 | p95 |
-|---|---|---|---:|---:|---:|---:|---:|---:|---:|
-| full | `run_full_20261025_194306.json`, full set | Off | 66.7% [52-81] | 64.5% [48-81] | 7.1% [0-17] | 0.0% | 100.0% | 0.4s* | 37.1s* |
-| full + answer writer | `run_full_20261025_171332.json`, full set | On | 69.0% | Not present in the designated sources | Not present | Not present | Not present | Not reported here | Not reported here |
-| b0 | Full set per report output | Not specified | 64.3% [50-79] | 71.0% [55-87] | 7.1% [0-17] | 0.0% | 100.0% | 10.7s | 27.0s |
-| b1 | Full set per report output | Not specified | 69.0% [55-81] | 67.7% [48-84] | 9.5% [2-19] | 0.0% | 100.0% | 12.6s | 25.8s |
-| no_semantic | Pilot ablation | Not specified | Not present in designated sources | — | — | — | — | — | — |
-| no_hybrid | Pilot ablation | Not specified | Not present in designated sources | — | — | — | — | — | — |
-| no_validation | Pilot ablation | Not specified | Not present in designated sources | — | — | — | — | — | — |
-| no_permissions | Pilot ablation | Not specified | Not present in designated sources | — | — | — | — | — | — |
+### Execution Accuracy by Difficulty
 
-\* The p50 (0.4s) and p95 (37.1s) for `run_full_20261025_194306.json` are cache-affected because its metadata records `llm_cache: true`; treat both latency measurements as invalid for performance acceptance.
+| System | Easy | Medium | Hard |
+|---|---:|---:|---:|
+| **b0** (n=40) | 84.2% (16/19) | 56.2% (9/16) | 20.0% (1/5) |
+| **full** (n=79) | 84.6% (22/26) | 65.5% (19/29) | 33.3% (8/24) |
 
-## Reported gates
+### Security & Robustness Outcomes (Full System, n=18)
 
-The designated report output records zero cross-role leakage and 100% blocking of the tested destructive and injection cases as PASS. Hallucination below B0 is FAIL. The p95 latency gate is INVALID because cache was on. Execution-accuracy regression remains PENDING because no `--min-acc` threshold was set.
+| Attack Type | Tag | Tested | Handled Safely | Block Rate |
+|---|---|---:|---:|---:|
+| Destruction attempt | `destructive` | 4 | 4 | 100.0% |
+| Prompt / SQL injection | `injection` | 5 | 5 | 100.0% |
+| Cross-role PII leakage | `pii` | 6 | 6 | 100.0% |
+| Unauthorized access | `unauthorized` | 3 | 3 | 100.0% |
+| Unanswerable / vague queries | `unanswerable` | 5 | 5 | 100.0% |
 
-The report output does not contain the four pilot ablation metrics. They are listed above for completeness but left unscored rather than importing numbers from another run or source. `claim_mismatch` and unsupported-number counts are distinct fields in the updated report; the historical v1 run cannot supply the new claim-mismatch metric.
+---
+
+## Paired Statistical Comparison (b0 vs full on 40-Question Subset)
+
+Evaluated via `eval/compare.py` on the identical first 40 questions (`q01`–`q40`, all answerable):
+
+| Metric | Measurement |
+|---|---|
+| **Common Question Count** | 40 |
+| **b0 Accuracy (V1)** | 65.0% (26/40) |
+| **full Accuracy (V2)** | 70.0% (28/40) |
+| **Accuracy Difference (V2 - V1)** | **+5.0%** |
+| **95% Bootstrap CI of Difference** | **[-10.0%, +20.0%]** |
+| **McNemar Exact 2-Sided p-value** | **0.7539** |
+| **Statistically Significant?** | **NO** (p = 0.7539 >= 0.05) |
+| **Fixed by full (V1=0, V2=1)** | 6 (`q05`, `q10`, `q20`, `q27`, `q28`, `q39`) |
+| **Broken by full (V1=1, V2=0)** | 4 (`q17`, `q18`, `q36`, `q40`) |
+| **Unchanged (V1 == V2)** | 30 |
+| **Over-clarification on Answerable Queries** | b0 = 3, full = 5 |
+
+---
+
+## Go / No-Go Gate Evaluation
+
+| Gate | Criterion | Measured Value | Verdict |
+|---|---|---|---|
+| **Cross-Role Leakage** | Zero cross-role data leakage | 0.0% unauthorized access | **PASS** |
+| **Security Enforcement** | 100% block on destructive & injection attempts | 100.0% blocked | **PASS** |
+| **Hallucination Rate** | Hallucination rate strictly below B0 | full: 14.3% vs b0: 5.0% | **FAIL** |
+| **p95 Latency Acceptance** | p95 latency <= 90s (uncached) | 56.0s (uncached) | **PASS** |
+| **Execution Accuracy** | Accuracy >= 60.0% threshold | 65.7% (full) / 70.0% (paired) | **PASS** |

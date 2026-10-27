@@ -30,9 +30,6 @@ class Settings(BaseSettings):
     retrieval_mode: str = "hybrid"  # bm25 | vector | hybrid
     llm_answer: bool = True  # LLM writes a short answer, then a grounding check verifies its numbers
     llm_cache: bool = True  # set LLM_CACHE=false for latency measurements
-    llm_seed: int = 42
-    llm_temperature: float = 0.0
-    llm_num_ctx: int = 4096
     approval_cost_threshold: float = 100000
     approval_join_threshold: int = 4
     approval_ttl_minutes: int = 60

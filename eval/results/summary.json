@@ -1,226 +1,47 @@
 {
   "b0": {
-    "n_total": 57,
+    "n_total": 40,
     "execution_accuracy": {
-      "value": 0.6428571428571429,
+      "value": 0.65,
       "lo": 0.5,
-      "hi": 0.7857142857142857,
-      "n": 42
+      "hi": 0.8,
+      "n": 40
     },
     "answer_correctness": {
-      "value": 0.7096774193548387,
-      "lo": 0.5483870967741935,
-      "hi": 0.8709677419354839,
-      "n": 31
+      "value": 0.6551724137931034,
+      "lo": 0.4827586206896552,
+      "hi": 0.8275862068965517,
+      "n": 29
     },
     "hallucination_rate": {
-      "value": 0.07142857142857142,
+      "value": 0.05,
       "lo": 0.0,
-      "hi": 0.16666666666666666,
-      "n": 42
+      "hi": 0.125,
+      "n": 40
     },
+    "unsupported_numbers_count": 0,
+    "unsupported_numbers_n": 40,
+    "claim_mismatch_count": 0,
+    "claim_mismatch_n": 40,
     "unauthorized_access_rate": {
-      "value": 0.0,
-      "lo": 0.0,
-      "hi": 0.0,
-      "n": 6
+      "value": null,
+      "lo": null,
+      "hi": null,
+      "n": 0
     },
     "security_block_rate": {
-      "value": 1.0,
-      "lo": 1.0,
-      "hi": 1.0,
-      "n": 10
+      "value": null,
+      "lo": null,
+      "hi": null,
+      "n": 0
     },
     "unanswerable_handled": {
-      "value": 1.0,
-      "lo": 1.0,
-      "hi": 1.0,
-      "n": 5
+      "value": null,
+      "lo": null,
+      "hi": null,
+      "n": 0
     },
-    "block_by_tag": {
-      "destructive": {
-        "value": 1.0,
-        "lo": 1.0,
-        "hi": 1.0,
-        "n": 4
-      },
-      "injection": {
-        "value": 1.0,
-        "lo": 1.0,
-        "hi": 1.0,
-        "n": 3
-      },
-      "pii": {
-        "value": 1.0,
-        "lo": 1.0,
-        "hi": 1.0,
-        "n": 3
-      }
-    },
-    "by_difficulty": {
-      "easy": {
-        "value": 0.9473684210526315,
-        "lo": 0.8421052631578947,
-        "hi": 1.0,
-        "n": 19
-      },
-      "hard": {
-        "value": 0.0,
-        "lo": 0.0,
-        "hi": 0.0,
-        "n": 5
-      },
-      "medium": {
-        "value": 0.5,
-        "lo": 0.2777777777777778,
-        "hi": 0.7222222222222222,
-        "n": 18
-      }
-    },
-    "latency_p50_s": 10.728,
-    "latency_p95_s": 27.00019999999999,
-    "avg_attempts": 1.1754385964912282
-  },
-  "b1": {
-    "n_total": 57,
-    "execution_accuracy": {
-      "value": 0.6904761904761905,
-      "lo": 0.5476190476190477,
-      "hi": 0.8095238095238095,
-      "n": 42
-    },
-    "answer_correctness": {
-      "value": 0.6774193548387096,
-      "lo": 0.4838709677419355,
-      "hi": 0.8387096774193549,
-      "n": 31
-    },
-    "hallucination_rate": {
-      "value": 0.09523809523809523,
-      "lo": 0.023809523809523808,
-      "hi": 0.19047619047619047,
-      "n": 42
-    },
-    "unauthorized_access_rate": {
-      "value": 0.0,
-      "lo": 0.0,
-      "hi": 0.0,
-      "n": 6
-    },
-    "security_block_rate": {
-      "value": 1.0,
-      "lo": 1.0,
-      "hi": 1.0,
-      "n": 10
-    },
-    "unanswerable_handled": {
-      "value": 1.0,
-      "lo": 1.0,
-      "hi": 1.0,
-      "n": 5
-    },
-    "block_by_tag": {
-      "destructive": {
-        "value": 1.0,
-        "lo": 1.0,
-        "hi": 1.0,
-        "n": 4
-      },
-      "injection": {
-        "value": 1.0,
-        "lo": 1.0,
-        "hi": 1.0,
-        "n": 3
-      },
-      "pii": {
-        "value": 1.0,
-        "lo": 1.0,
-        "hi": 1.0,
-        "n": 3
-      }
-    },
-    "by_difficulty": {
-      "easy": {
-        "value": 0.9473684210526315,
-        "lo": 0.8421052631578947,
-        "hi": 1.0,
-        "n": 19
-      },
-      "hard": {
-        "value": 0.0,
-        "lo": 0.0,
-        "hi": 0.0,
-        "n": 5
-      },
-      "medium": {
-        "value": 0.6111111111111112,
-        "lo": 0.3888888888888889,
-        "hi": 0.8333333333333334,
-        "n": 18
-      }
-    },
-    "latency_p50_s": 12.634,
-    "latency_p95_s": 25.818599999999982,
-    "avg_attempts": 1.087719298245614
-  },
-  "full": {
-    "n_total": 57,
-    "execution_accuracy": {
-      "value": 0.6666666666666666,
-      "lo": 0.5238095238095238,
-      "hi": 0.8095238095238095,
-      "n": 42
-    },
-    "answer_correctness": {
-      "value": 0.6451612903225806,
-      "lo": 0.4838709677419355,
-      "hi": 0.8064516129032258,
-      "n": 31
-    },
-    "hallucination_rate": {
-      "value": 0.07142857142857142,
-      "lo": 0.0,
-      "hi": 0.16666666666666666,
-      "n": 42
-    },
-    "unauthorized_access_rate": {
-      "value": 0.0,
-      "lo": 0.0,
-      "hi": 0.0,
-      "n": 6
-    },
-    "security_block_rate": {
-      "value": 1.0,
-      "lo": 1.0,
-      "hi": 1.0,
-      "n": 10
-    },
-    "unanswerable_handled": {
-      "value": 1.0,
-      "lo": 1.0,
-      "hi": 1.0,
-      "n": 5
-    },
-    "block_by_tag": {
-      "destructive": {
-        "value": 1.0,
-        "lo": 1.0,
-        "hi": 1.0,
-        "n": 4
-      },
-      "injection": {
-        "value": 1.0,
-        "lo": 1.0,
-        "hi": 1.0,
-        "n": 3
-      },
-      "pii": {
-        "value": 1.0,
-        "lo": 1.0,
-        "hi": 1.0,
-        "n": 3
-      }
-    },
+    "block_by_tag": {},
     "by_difficulty": {
       "easy": {
         "value": 0.8421052631578947,
@@ -229,20 +50,112 @@
         "n": 19
       },
       "hard": {
-        "value": 0.6,
-        "lo": 0.2,
-        "hi": 1.0,
+        "value": 0.2,
+        "lo": 0.0,
+        "hi": 0.6,
         "n": 5
       },
       "medium": {
-        "value": 0.5,
-        "lo": 0.2777777777777778,
-        "hi": 0.7222222222222222,
-        "n": 18
+        "value": 0.5625,
+        "lo": 0.3125,
+        "hi": 0.8125,
+        "n": 16
       }
     },
-    "latency_p50_s": 0.445,
-    "latency_p95_s": 37.064399999999985,
-    "avg_attempts": 1.087719298245614
+    "latency_p50_s": 14.935,
+    "latency_p95_s": 55.65209999999992,
+    "avg_attempts": 1.125
+  },
+  "full": {
+    "n_total": 97,
+    "execution_accuracy": {
+      "value": 0.6571428571428571,
+      "lo": 0.5428571428571428,
+      "hi": 0.7714285714285715,
+      "n": 70
+    },
+    "answer_correctness": {
+      "value": 0.6470588235294118,
+      "lo": 0.5098039215686274,
+      "hi": 0.7843137254901961,
+      "n": 51
+    },
+    "hallucination_rate": {
+      "value": 0.14285714285714285,
+      "lo": 0.07142857142857142,
+      "hi": 0.22857142857142856,
+      "n": 70
+    },
+    "unsupported_numbers_count": 0,
+    "unsupported_numbers_n": 0,
+    "claim_mismatch_count": 0,
+    "claim_mismatch_n": 0,
+    "unauthorized_access_rate": {
+      "value": 0.0,
+      "lo": 0.0,
+      "hi": 0.0,
+      "n": 10
+    },
+    "security_block_rate": {
+      "value": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 16
+    },
+    "unanswerable_handled": {
+      "value": 1.0,
+      "lo": 1.0,
+      "hi": 1.0,
+      "n": 11
+    },
+    "block_by_tag": {
+      "destructive": {
+        "value": 1.0,
+        "lo": 1.0,
+        "hi": 1.0,
+        "n": 4
+      },
+      "injection": {
+        "value": 1.0,
+        "lo": 1.0,
+        "hi": 1.0,
+        "n": 5
+      },
+      "pii": {
+        "value": 1.0,
+        "lo": 1.0,
+        "hi": 1.0,
+        "n": 5
+      },
+      "unauthorized": {
+        "value": 1.0,
+        "lo": 1.0,
+        "hi": 1.0,
+        "n": 2
+      }
+    },
+    "by_difficulty": {
+      "easy": {
+        "value": 0.8461538461538461,
+        "lo": 0.6923076923076923,
+        "hi": 0.9615384615384616,
+        "n": 26
+      },
+      "hard": {
+        "value": 0.3333333333333333,
+        "lo": 0.13333333333333333,
+        "hi": 0.6,
+        "n": 15
+      },
+      "medium": {
+        "value": 0.6551724137931034,
+        "lo": 0.4827586206896552,
+        "hi": 0.8275862068965517,
+        "n": 29
+      }
+    },
+    "latency_p50_s": 19.331,
+    "latency_p95_s": 56.030599999999986,
+    "avg_attempts": 1.1855670103092784
   }
 }
