@@ -55,9 +55,8 @@ def warm_retrieval_index() -> None:
             log.exception("Could not warm the %s retrieval index", role)
 
 
-@lru_cache
 def _llm() -> OllamaClient:
-    return OllamaClient()
+    return OllamaClient(seed=settings.llm_seed, temperature=settings.llm_temperature)
 
 
 @tool("retrieve")

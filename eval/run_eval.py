@@ -100,14 +100,27 @@ def score(q: dict, res: QueryResult, ref) -> dict:
     return rec
 
 
+def get_commit_sha() -> str:
+    import subprocess
+    try:
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    except Exception:
+        return "unknown"
+
+
 def main() -> None:
+    import hashlib
     ap = argparse.ArgumentParser()
     ap.add_argument("system", choices=sorted(VARIANTS))
     ap.add_argument("--pilot", action="store_true", help="every 3rd question; saved under results/pilot")
     ap.add_argument("--no-answer", action="store_true", help="skip LLM answer writing (no number-grounding metric)")
     ap.add_argument("--allow-changed", action="store_true")
+    ap.add_argument("--seed", type=int, default=42, help="random seed for LLM generation")
+    ap.add_argument("--temperature", type=float, default=0.0, help="sampling temperature")
     args = ap.parse_args()
 
+    settings.llm_seed = args.seed
+    settings.llm_temperature = args.temperature
     if args.no_answer:
         settings.llm_answer = False
     variant = VARIANTS[args.system]
@@ -122,7 +135,9 @@ def main() -> None:
     if frozen is None and not args.pilot:
         print("WARNING: protocol not frozen. Run `python eval\\freeze.py` before final runs.\n")
 
-    gold = [json.loads(line) for line in (ROOT / "eval" / "gold.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+    # DEV SET ONLY: tuning scripts are physically unable to load held-out questions
+    gold_dev_file = ROOT / "eval" / "gold_dev.jsonl"
+    gold = [json.loads(line) for line in gold_dev_file.read_text(encoding="utf-8").splitlines() if line.strip()]
     if args.pilot:
         gold = gold[::3]
 
@@ -144,25 +159,47 @@ def main() -> None:
         print(f"{'PASS' if rec['ok'] else 'FAIL'}  {q['id']:4} {res.status:15} {q['question'][:58]}")
 
     summary = summarize(results)
-    meta = {"system": args.system, "variant": asdict(variant), "pilot": args.pilot,
-            "started": datetime.now(timezone.utc).isoformat(timespec="seconds"), "n": len(results),
-            "llm_answer": settings.llm_answer, "llm_cache": settings.llm_cache,
-            "fingerprint": fp, "frozen": frozen is not None and not changed,
-            "retrieval_fallbacks": fallbacks}
+    commit_sha = get_commit_sha()
+    prompt_bytes = (ROOT / "backend/app/generation/prompt.py").read_bytes()
+    prompt_hash = hashlib.sha256(prompt_bytes).hexdigest()[:16]
+
+    run_config = {
+        "model": settings.ollama_model,
+        "temperature": settings.llm_temperature,
+        "seed": settings.llm_seed,
+        "commit_sha": commit_sha,
+        "prompt_hash": prompt_hash,
+        "llm_cache": settings.llm_cache,
+    }
+
+    meta = {
+        "system": args.system, "variant": asdict(variant), "pilot": args.pilot,
+        "split": "dev",
+        "started": datetime.now(timezone.utc).isoformat(timespec="seconds"), "n": len(results),
+        "llm_answer": settings.llm_answer, "llm_cache": settings.llm_cache,
+        "run_config": run_config,
+        "fingerprint": fp, "frozen": frozen is not None and not changed,
+        "retrieval_fallbacks": fallbacks,
+    }
     out_dir = ROOT / "eval" / "results" / ("pilot" if args.pilot else "")
     out_dir.mkdir(parents=True, exist_ok=True)
-    out = out_dir / f"run_{args.system}_{datetime.now(timezone.utc):%Y%m%d_%H%M%S}.json"
+    timestamp = f"{datetime.now(timezone.utc):%Y%m%d_%H%M%S}"
+    out = out_dir / f"run_{args.system}_{timestamp}_seed{args.seed}.json"
+    config_out = out_dir / f"run_{args.system}_{timestamp}_seed{args.seed}.config.json"
+
     out.write_text(json.dumps({"meta": meta, "summary": summary, "results": results}, indent=2), encoding="utf-8")
+    config_out.write_text(json.dumps(run_config, indent=2), encoding="utf-8")
 
     def pct(r: dict) -> str:
         return "-" if r["value"] is None else f"{r['value'] * 100:.1f}%"
 
-    print(f"\n{args.system}: exec acc {pct(summary['execution_accuracy'])} | halluc {pct(summary['hallucination_rate'])} | "
+    print(f"\n{args.system} (dev, seed={args.seed}): exec acc {pct(summary['execution_accuracy'])} | halluc {pct(summary['hallucination_rate'])} | "
           f"unauthorized {pct(summary['unauthorized_access_rate'])} | block {pct(summary['security_block_rate'])} | "
           f"p50 {summary['latency_p50_s']:.1f}s")
     if fallbacks:
         print(f"WARNING: retrieval fell back to BM25 on {fallbacks} questions (embeddings unavailable?)")
     print("saved", out)
+    print("saved config", config_out)
 
 
 if __name__ == "__main__":
