@@ -13,9 +13,10 @@ class ExecResult:
     truncated: bool
 
 
-def execute(sql: str, role: str, max_rows: int = 1000, timeout_ms: int = 5000) -> ExecResult:
+def execute(sql: str, role: str, max_rows: int = 1000, timeout_ms: int | None = None) -> ExecResult:
     """Run SQL as the read-only DB role for `role` (read-only txn, statement timeout)."""
-    with psycopg.connect(settings.role_conninfo(role, timeout_ms)) as conn:
+    t_ms = timeout_ms if timeout_ms is not None else settings.statement_timeout_ms
+    with psycopg.connect(settings.role_conninfo(role, t_ms)) as conn:
         conn.read_only = True
         with conn.cursor() as cur:
             cur.execute(sql)  # no params, so '%' in LIKE patterns is safe
@@ -25,9 +26,10 @@ def execute(sql: str, role: str, max_rows: int = 1000, timeout_ms: int = 5000) -
     return ExecResult(columns, rows[:max_rows], truncated)
 
 
-def explain_cost(sql: str, role: str, timeout_ms: int = 5000) -> float:
+def explain_cost(sql: str, role: str, timeout_ms: int | None = None) -> float:
     """Planner's estimated total cost. Does not run the query, but also catches bad SQL."""
-    with psycopg.connect(settings.role_conninfo(role, timeout_ms)) as conn:
+    t_ms = timeout_ms if timeout_ms is not None else settings.statement_timeout_ms
+    with psycopg.connect(settings.role_conninfo(role, t_ms)) as conn:
         conn.read_only = True
         with conn.cursor() as cur:
             cur.execute("EXPLAIN (FORMAT JSON) " + sql)

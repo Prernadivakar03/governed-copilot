@@ -6,7 +6,7 @@ from app.auth.models import User
 from app.db import connect
 
 router = APIRouter(tags=["metrics"])
-READERS = require_roles("auditor", "admin")
+READERS = require_roles("analyst", "steward", "auditor", "admin")
 
 
 def collect() -> dict:

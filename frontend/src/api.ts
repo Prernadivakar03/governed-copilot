@@ -117,6 +117,16 @@ export const api = {
   auditEvents: () => request<AuditEvent[]>("/audit/events?limit=50"),
   metricsSummary: () => request<MetricsSummary>("/metrics/summary"),
   evalRuns: () => request<EvalRun[]>("/eval/runs"),
+  evalRunDetail: (id: string) => request<Record<string, unknown>>(`/eval/runs/${id}`),
+  catalogTables: () => request<CatalogTable[]>("/catalog/tables"),
+  catalogTable: (name: string) => request<CatalogTable>(`/catalog/tables/${name}`),
+  semanticModel: () => request<SemanticModel>("/semantic"),
+  studioValidate: (sql: string) =>
+    request<StudioValidateOut>("/studio/validate", { method: "POST", body: JSON.stringify({ sql }) }),
+  studioExecute: (sql: string) =>
+    request<StudioExecuteOut>("/studio/execute", { method: "POST", body: JSON.stringify({ sql }) }),
+  systemStatus: () => request<SystemStatus>("/system/status"),
+  myHistory: () => request<HistoryItem[]>("/queries"),
 };
 
 
@@ -135,4 +145,118 @@ export interface EvalRun {
     execution_accuracy?: Rate; hallucination_rate?: Rate; unauthorized_access_rate?: Rate;
     security_block_rate?: Rate; latency_p50_s?: number | null;
   };
+}
+
+export interface CatalogColumn {
+  name: string;
+  description: string;
+  sensitivity: "public" | "internal" | "pii";
+}
+
+export interface CatalogTable {
+  name: string;
+  description: string;
+  row_count: number | null;
+  column_count: number;
+  columns: CatalogColumn[];
+  accessible: boolean;
+  joins?: { left: string; right: string; cardinality: string; id: string }[];
+}
+
+export interface SemanticMetric {
+  name: string;
+  description: string;
+  expression: string;
+  tables: string[];
+  filters: string[];
+  owner: string;
+  version: number;
+  synonyms: string[];
+}
+
+export interface SemanticJoin {
+  id: string;
+  left: string;
+  right: string;
+  cardinality: string;
+}
+
+export interface SemanticConflict {
+  metrics: string[];
+  default: string;
+  note: string;
+}
+
+export interface SemanticModel {
+  version: number;
+  metrics: Record<string, SemanticMetric>;
+  joins: SemanticJoin[];
+  rules: string[];
+  conflicts: SemanticConflict[];
+  role: Role;
+  data_role: string;
+}
+
+export interface StudioValidateOut {
+  valid: boolean;
+  safe_sql: string | null;
+  error?: string;
+  gate_reason: string | null;
+  requires_approval: boolean;
+  sensitive_columns: string[];
+  estimated_cost: number | null;
+  latency_ms: number;
+}
+
+export interface StudioExecuteOut {
+  sql: string;
+  columns: string[];
+  rows: unknown[][];
+  row_count: number;
+  truncated: boolean;
+  latency_ms: number;
+}
+
+export interface SystemStatus {
+  status: "operational" | "degraded";
+  timestamp: number;
+  database: {
+    status: string;
+    host: string;
+    port: number;
+    database: string;
+    ping_latency_ms: number;
+    statement_timeout_ms: number;
+  };
+  llm: {
+    status: string;
+    provider: string;
+    url: string;
+    model: string;
+    ping_latency_ms: number;
+    cache_enabled: boolean;
+    cached_responses: number;
+  };
+  retrieval: {
+    mode: string;
+    cached_vectors: number;
+  };
+  semantic_catalog: {
+    registered_tables: number;
+    registered_metrics: number;
+    rules_count: number;
+  };
+  governance: {
+    approval_cost_threshold: number;
+    approval_join_threshold: number;
+    approval_ttl_minutes: number;
+  };
+}
+
+export interface HistoryItem {
+  id: string;
+  question: string;
+  status: string;
+  latency_ms: number | null;
+  created_at: string;
 }

@@ -1,0 +1,9 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-9.1.1, pluggy-1.6.0 -- C:\prerna\governed-copilot\backend\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\prerna\governed-copilot
+configfile: pytest.ini
+testpaths: backend/tests
+plugins: anyio-4.15.1
+collecting ... collected 343 items / 1 skipped
+

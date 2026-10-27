@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     approval_cost_threshold: float = 100000
     approval_join_threshold: int = 4
     approval_ttl_minutes: int = 60
+    statement_timeout_ms: int = 15000
 
     def conninfo(self, user: str, password: str, timeout_ms: int | None = None) -> str:
         options = f"-c statement_timeout={timeout_ms}" if timeout_ms else None

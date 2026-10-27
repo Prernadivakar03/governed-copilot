@@ -4,3 +4,10 @@ line-length = 120
 
 [tool.ruff.lint.flake8-bugbear]
 extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends"]
+
+[tool.pyright]
+include = ["backend", "eval"]
+extraPaths = ["backend", "eval"]
+venvPath = "backend"
+venv = ".venv"
+

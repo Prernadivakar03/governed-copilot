@@ -43,10 +43,12 @@ def _retriever(role: str, mode: str) -> Retriever:
 
 
 def warm_retrieval_index() -> None:
-    """Build the configured retrieval indexes before the first user query."""
+    """Build the configured retrieval indexes and warm model before the first user query."""
     for role in ("analyst", "steward"):
         try:
-            _retriever(role, settings.retrieval_mode)
+            r = _retriever(role, settings.retrieval_mode)
+            if settings.retrieval_mode in ("vector", "hybrid"):
+                r.search("warmup test query", k=2)
         except Exception:
             # Retrieval remains available through the normal fallback path if
             # the embedding model cannot be loaded during startup.

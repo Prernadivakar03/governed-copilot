@@ -5,7 +5,7 @@ import psycopg
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import approvals, audit, auth, evals, metrics, queries
+from app.api import approvals, audit, auth, catalog, evals, metrics, monitoring, queries, semantic, studio
 from app.config import settings
 from app.db import connect
 from app.governance.tools import warm_retrieval_index
@@ -19,15 +19,26 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="Governed Analytics Copilot", lifespan=lifespan)
 
-app.add_middleware(  # the React dev server (Part 3) runs on 5173
+app.add_middleware(  # the React dev server runs on 5173
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
-for r in (auth.router, queries.router, approvals.router, audit.router, metrics.router, evals.router):
+for r in (
+    auth.router,
+    queries.router,
+    approvals.router,
+    audit.router,
+    metrics.router,
+    evals.router,
+    catalog.router,
+    semantic.router,
+    studio.router,
+    monitoring.router,
+):
     app.include_router(r)
 
 

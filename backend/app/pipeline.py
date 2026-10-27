@@ -23,6 +23,7 @@ MAX_ATTEMPTS = 3
 
 COMPLETED, BLOCKED, CLARIFY = "COMPLETED", "BLOCKED", "CLARIFY"
 CANNOT_ANSWER, FAILED, PENDING_APPROVAL = "CANNOT_ANSWER", "FAILED", "PENDING_APPROVAL"
+TIMEOUT = "TIMEOUT"
 
 # gate(safe_sql, db_role) -> reason string if a human must approve, else None
 Gate = Callable[[str, str], str | None]
@@ -60,7 +61,7 @@ def _jsonable(v: Any) -> Any:
 
 def _simple_answer(columns: list[str], rows: list[list[Any]], truncated: bool) -> str:
     if not rows:
-        return "The query returned no rows."
+        return "The query returned no rows. No matching records were found for the specified filters."
     if len(rows) == 1 and len(columns) == 1:
         return f"{columns[0]}: {rows[0][0]}"
     note = " (truncated)" if truncated else ""
@@ -150,10 +151,16 @@ def run_query(question: str, role: str, gate: Gate | None = None,
 
         status = out.get("status", "ok")
         if status == "clarify":
-            res.status, res.message = CLARIFY, str(out.get("message", "Please clarify."))
+            if attempt == 1:
+                res.status, res.message = CLARIFY, str(out.get("message", "Please clarify."))
+                break
+            # On attempt > 1, the LLM attempted to evade an execution/validation error
+            # with a generic clarification. Break and preserve the real underlying error.
             break
         if status == "cannot_answer":
-            res.status, res.message = CANNOT_ANSWER, str(out.get("message", "Not answerable."))
+            if attempt == 1:
+                res.status, res.message = CANNOT_ANSWER, str(out.get("message", "Not answerable."))
+                break
             break
 
         sql = out.get("sql")
@@ -178,7 +185,7 @@ def run_query(question: str, role: str, gate: Gate | None = None,
                         event("gate", t0, approval_required=bool(reason))
                     except psycopg.Error as e:
                         event("gate", t0, error=type(e).__name__)
-                        err = f"Database error: {str(e).splitlines()[0]}"
+                        err = f"Database error in governance gate: {str(e).splitlines()[0]}"
 
                 if err is None and reason:
                     _cite(res, out, ctx)
@@ -191,7 +198,15 @@ def run_query(question: str, role: str, gate: Gate | None = None,
                         event("execute", t0, rows=len(ex.rows))
                     except psycopg.Error as e:
                         event("execute", t0, error=type(e).__name__)
-                        err = f"Database error: {str(e).splitlines()[0]}"
+                        err_line = str(e).splitlines()[0] if str(e).strip() else type(e).__name__
+                        if isinstance(e, psycopg.errors.QueryCanceled) or "statement timeout" in str(e).lower():
+                            err = f"Query canceled due to statement timeout ({err_line}). Try filtering by a narrower date range or category."
+                            kind = TIMEOUT
+                            last_error, last_kind = err, kind
+                            # Database timeouts should not be retried with the exact same slow query
+                            break
+                        else:
+                            err = f"Database execution error: {err_line}"
                     else:
                         _cite(res, out, ctx)
                         res.sql = safe_sql
@@ -209,7 +224,7 @@ def run_query(question: str, role: str, gate: Gate | None = None,
         messages.append({"role": "user", "content":
                          f"{last_error} Fix the query and reply with JSON again."})
 
-    if res.status not in (COMPLETED, CLARIFY, CANNOT_ANSWER, PENDING_APPROVAL):
+    if res.status not in (COMPLETED, CLARIFY, CANNOT_ANSWER, PENDING_APPROVAL, TIMEOUT):
         res.status, res.message = last_kind, last_error
 
     res.latency_ms = round((time.perf_counter() - t_start) * 1000)

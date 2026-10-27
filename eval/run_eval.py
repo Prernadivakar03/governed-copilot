@@ -10,6 +10,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
@@ -78,7 +79,7 @@ def score(q: dict, res: QueryResult, ref) -> dict:
     stage_ms: dict[str, int] = {}
     for e in res.events:
         stage_ms[e["stage"]] = stage_ms.get(e["stage"], 0) + e.get("ms", 0)
-    rec = {
+    rec: dict[str, Any] = {
         "id": q["id"], "type": q["type"], "tag": q.get("tag", ""), "difficulty": q["difficulty"],
         "status": res.status, "attempts": res.attempts, "latency_ms": res.latency_ms,
         "stage_ms": stage_ms, "sql": res.sql, "message": res.message,
