@@ -35,10 +35,11 @@ class Settings(BaseSettings):
     approval_ttl_minutes: int = 60
     statement_timeout_ms: int = 15000
 
-    def conninfo(self, user: str, password: str, timeout_ms: int | None = None, connect_timeout_s: int = 2) -> str:
+    def conninfo(self, user: str, password: str, timeout_ms: int | None = None, connect_timeout_s: int = 10) -> str:
         options = f"-c statement_timeout={timeout_ms}" if timeout_ms else None
+        host = "127.0.0.1" if self.postgres_host == "localhost" else self.postgres_host
         kwargs = {
-            "host": self.postgres_host,
+            "host": host,
             "port": self.postgres_port,
             "dbname": self.postgres_db,
             "user": user,

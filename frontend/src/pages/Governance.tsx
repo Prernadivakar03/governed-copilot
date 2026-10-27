@@ -165,8 +165,21 @@ export default function Governance() {
   }, []);
 
   useEffect(() => {
-    fetchApprovals();
-  }, [fetchApprovals]);
+    let active = true;
+    api.approvals()
+      .then((data) => {
+        if (active) {
+          setApprovals(data);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleDone = (msg: string) => {
     setToastMessage(msg);

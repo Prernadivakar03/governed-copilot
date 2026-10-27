@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   User as UserIcon,
   Sun,
@@ -11,12 +11,9 @@ import { useAuth } from "../authContext";
 
 export default function Settings() {
   const { user, signOut } = useAuth();
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-
-  useEffect(() => {
-    const current = (localStorage.getItem("theme") as "dark" | "light") || "dark";
-    setTheme(current);
-  }, []);
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    return (localStorage.getItem("theme") as "dark" | "light") || "dark";
+  });
 
   const handleThemeChange = (newTheme: "dark" | "light") => {
     setTheme(newTheme);

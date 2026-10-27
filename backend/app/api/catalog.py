@@ -1,8 +1,8 @@
 from typing import Any
 
 import psycopg
-from psycopg import sql
 from fastapi import APIRouter, Depends, HTTPException
+from psycopg import sql
 
 from app.auth.deps import require_roles
 from app.auth.models import User

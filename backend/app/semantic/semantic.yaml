@@ -92,7 +92,7 @@ metrics:
     filters: ["orders.order_status = 'delivered'"]
     owner: finance
     version: 1
-    synonyms: [sales, turnover, income]
+    synonyms: [sales, turnover, income, "total revenue"]
   gross_revenue_with_freight:
     description: "Item price plus freight for delivered orders."
     expression: "SUM(order_items.price + order_items.freight_value)"
@@ -128,7 +128,29 @@ metrics:
     tables: [order_items]
     owner: finance
     version: 1
-    synonyms: [aov, "average basket"]
+    synonyms: [aov, "average basket", "average order value"]
+  most_used_payment_type:
+    description: "The payment type used most frequently across orders."
+    expression: "order_payments.payment_type"
+    tables: [order_payments]
+    owner: finance
+    version: 1
+    synonyms: ["most used payment type", "most popular payment type"]
+  canceled_orders:
+    description: "Count of orders that were canceled."
+    expression: "COUNT(orders.order_id)"
+    tables: [orders]
+    filters: ["orders.order_status = 'canceled'"]
+    owner: operations
+    version: 1
+    synonyms: ["canceled orders", "cancelled orders", "canceled order count"]
+  orders_with_more_than_one_payment:
+    description: "Count of orders that have more than one payment."
+    expression: "COUNT(order_payments.order_id)"
+    tables: [order_payments]
+    owner: finance
+    version: 1
+    synonyms: ["orders with more than one payment", "multiple payments"]
 
 joins:
   - {left: orders.customer_id, right: customers.customer_id, cardinality: many-to-one}

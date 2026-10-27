@@ -5,13 +5,16 @@ from app.retrieval.retriever import Context
 SYSTEM = """You are a careful PostgreSQL analyst. Turn a business question into ONE read-only SQL query.
 Reply with JSON only, using these keys:
   "status": "ok" | "clarify" | "cannot_answer"
-  "sql": the SQL string (empty unless status is "ok")
+  "metric": optional metric name if the question asks for a predefined metric ("total revenue", "average order value", "most used payment type", "canceled orders", "orders with more than one payment")
+  "filters": optional list of simple SQL filter expressions (e.g. ["orders.order_purchase_timestamp >= '2018-01-01'"])
+  "sql": the SQL string (required if status is "ok" unless metric is specified)
   "source_ids": list of ids from CONTEXT that you used, e.g. ["table:orders", "metric:revenue"]
   "message": one short sentence when status is not "ok"
 Rules:
 - Use ONLY the tables and columns listed in CONTEXT. Never guess column names.
 - Exactly one SELECT statement. No comments, no semicolons, no SELECT *, no DDL or DML.
 - When CONTEXT defines a metric, use its expression and filters exactly.
+- For predefined metrics (total revenue, average order value, most used payment type, canceled orders, orders with more than one payment), you may pick the metric name in "metric" and simple filters in "filters".
 - If CONTEXT defines a matching metric, use it. If the question has a reasonable default interpretation,
   answer with that interpretation and state the assumption
   in "message". Do not ask for clarification merely because another interpretation
@@ -26,15 +29,48 @@ Rules:
 - PostgreSQL dialect."""
 
 FEW_SHOT_EXAMPLES = """Generic examples:
-Question: What is net sales by month?
-Context defines net_sales and an order date. Use net_sales grouped by month; if no
-date range is supplied, use all available dates and state that assumption.
-Question: Which warehouse region had the most returned units?
-Context includes region and returned units. Return regions ordered by returned units
-descending; use the first row as the highest and state the ranking assumption.
-Question: How many units were sold in the selected period?
-Context includes units sold, but no selected period or date filter is provided
-and the application has no default period. Ask which period is intended."""
+Question: How many server clusters have more than 5 nodes?
+Answer:
+{
+  "status": "ok",
+  "sql": "WITH cluster_counts AS (SELECT cluster_id, COUNT(*) AS node_count FROM server_nodes GROUP BY cluster_id) SELECT COUNT(*) FROM cluster_counts WHERE node_count > 5",
+  "source_ids": ["table:server_nodes"]
+}
+Question: How many active vendor contracts are registered?
+Answer:
+{
+  "status": "ok",
+  "sql": "SELECT COUNT(*) FROM vendor_contracts WHERE status = 'active'",
+  "source_ids": ["table:vendor_contracts"]
+}
+Question: What is the average resolution time in days for closed support tickets?
+Answer:
+{
+  "status": "ok",
+  "sql": "SELECT AVG(EXTRACT(EPOCH FROM (resolved_at - opened_at)) / 86400.0) FROM support_tickets WHERE status = 'closed'",
+  "source_ids": ["table:support_tickets"]
+}
+Question: How many audit log records exist for system events?
+Answer:
+{
+  "status": "ok",
+  "sql": "SELECT COUNT(*) FROM audit_logs WHERE event_type = 'system'",
+  "source_ids": ["table:audit_logs"]
+}
+Question: List the names and price of all catalog products.
+Answer:
+{
+  "status": "ok",
+  "sql": "SELECT product_name, unit_price FROM catalog_products",
+  "source_ids": ["table:catalog_products"]
+}
+Question: How many employee accounts have an emergency contact phone recorded?
+Answer:
+{
+  "status": "ok",
+  "sql": "SELECT COUNT(emergency_phone) FROM employee_accounts",
+  "source_ids": ["table:employee_accounts"]
+}"""
 
 SYSTEM = SYSTEM.replace("PostgreSQL dialect.", f"{FEW_SHOT_EXAMPLES}\nPostgreSQL dialect.")
 

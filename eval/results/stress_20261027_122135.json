@@ -1,0 +1,82 @@
+{
+  "timestamp": "20261027_122135",
+  "config": {
+    "base_url": "http://127.0.0.1:8000",
+    "llm_cache": false
+  },
+  "concurrency": {
+    "total_requests": 20,
+    "success_count": 8,
+    "success_rate": 0.4,
+    "p50_ms": 206601.245,
+    "p95_ms": 247644.1465,
+    "p99_ms": 250641.6853,
+    "latencies_ms": [
+      206530.2,
+      206574.01,
+      206590.69,
+      206590.87,
+      206592.47,
+      206595.51,
+      206596.31,
+      206596.46,
+      206597.41,
+      206601.16,
+      206601.33,
+      206602.39,
+      211939.17,
+      213792.78,
+      215488.29,
+      217749.65,
+      219740.33,
+      225746.98,
+      247446.94,
+      251391.07
+    ],
+    "errors": []
+  },
+  "robustness": {
+    "cases": [
+      {
+        "name": "empty_question",
+        "status_code": 422,
+        "expected_rejection": true,
+        "verdict": "pass"
+      },
+      {
+        "name": "10k_char_question",
+        "status_code": 422,
+        "expected_rejection": true,
+        "verdict": "pass"
+      },
+      {
+        "name": "unicode_emoji",
+        "status_code": 200,
+        "verdict": "pass"
+      },
+      {
+        "name": "sql_pasted_in_question",
+        "status_code": 200,
+        "executed_sql": "",
+        "verdict": "pass"
+      },
+      {
+        "name": "repeated_identical_question",
+        "status_codes": [
+          200,
+          200,
+          200
+        ],
+        "verdict": "pass"
+      },
+      {
+        "name": "expired_token",
+        "status_code": 401,
+        "expected_rejection": true,
+        "verdict": "pass"
+      }
+    ],
+    "no_500_errors": true,
+    "no_unvalidated_sql_executed": true
+  }
+}

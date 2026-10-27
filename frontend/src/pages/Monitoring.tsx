@@ -13,7 +13,7 @@ import { api, type SystemStatus } from "../api";
 export default function Monitoring() {
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(() => new Date());
 
   const fetchStatus = () => {
     setLoading(true);
@@ -26,7 +26,21 @@ export default function Monitoring() {
   };
 
   useEffect(() => {
-    fetchStatus();
+    let active = true;
+    api.systemStatus()
+      .then((s) => {
+        if (active) {
+          setStatus(s);
+          setLastRefreshed(new Date());
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const isOperational = status?.status === "operational";

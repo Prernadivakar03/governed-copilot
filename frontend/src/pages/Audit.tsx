@@ -36,7 +36,25 @@ export default function Audit() {
   };
 
   useEffect(() => {
-    loadData();
+    let active = true;
+    Promise.all([api.auditVerify(), api.auditEvents()])
+      .then(([v, e]) => {
+        if (active) {
+          setVerify(v);
+          setEvents(e);
+          setError("");
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          setError(errorMessage(err));
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleVerifyNow = async () => {

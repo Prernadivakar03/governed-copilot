@@ -26,19 +26,19 @@ const PAGE_TITLES: Record<string, { root: string; current: string }> = {
 
 export function Header({ user, onSignOut }: HeaderProps) {
   const location = useLocation();
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    return (localStorage.getItem("theme") as "dark" | "light") || "dark";
+  });
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
 
   useEffect(() => {
-    const saved = (localStorage.getItem("theme") as "dark" | "light") || "dark";
-    setTheme(saved);
-    document.documentElement.dataset.theme = saved;
+    document.documentElement.dataset.theme = theme;
 
     // Fetch initial system health status
     api.systemStatus()
       .then(setSystemStatus)
       .catch(() => {});
-  }, []);
+  }, [theme]);
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";

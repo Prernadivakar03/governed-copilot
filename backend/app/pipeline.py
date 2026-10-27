@@ -12,9 +12,9 @@ import psycopg
 
 from app.config import settings
 from app.generation.llm import LLMError
-from app.generation.prompt import build_messages
+from app.generation.prompt import build_messages, render_context
 from app.governance.tools import MAX_ROWS, invoke
-from app.semantic.loader import load_semantic
+from app.semantic.loader import compile_metric_template, load_semantic
 from app.validation.grounding import claim_mismatch, result_row_answer, sanity_flags, ungrounded_numbers
 from app.validation.sql_validator import Rejected
 from app.variants import Variant, full_schema_context, strip_semantic
@@ -107,6 +107,25 @@ def _llm_answer(res: QueryResult, event: Callable[..., None]) -> None:
     event("summarize", t0, verdict="grounded")
 
 
+def check_result_shape(question: str, rows: list) -> str | None:
+    """Return an error hint if a scalar-aggregate question returned more than 1 row."""
+    q = question.lower()
+    keywords = ("how many", "total", "average")
+    matched = next((kw for kw in keywords if kw in q), None)
+    if not matched:
+        return None
+    grouping_signals = (" by ", " per ", " each ", " every ", "breakdown", "top ", "bottom ")
+    padded = f" {q} "
+    if any(sig in padded for sig in grouping_signals):
+        return None
+    if len(rows) > 1:
+        return (
+            f"Result shape check failed: question asks for scalar '{matched}', "
+            f"expected 1 row but got {len(rows)} rows. Aggregate into a single row without grouping."
+        )
+    return None
+
+
 def run_query(question: str, role: str, gate: Gate | None = None,
               retrieval_mode: str | None = None,
               on_event: Callable[[dict], None] | None = None,
@@ -136,6 +155,7 @@ def run_query(question: str, role: str, gate: Gate | None = None,
 
     messages = build_messages(question, ctx)
     last_error, last_kind = "no attempt made", FAILED
+    shape_retried = False
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
         res.attempts = attempt
@@ -154,20 +174,59 @@ def run_query(question: str, role: str, gate: Gate | None = None,
             if attempt == 1:
                 res.status, res.message = CLARIFY, str(out.get("message", "Please clarify."))
                 break
-            # On attempt > 1, the LLM attempted to evade an execution/validation error
-            # with a generic clarification. Break and preserve the real underlying error.
-            break
+            # On attempt > 1, count as failed attempt and retry, never CLARIFY.
+            sql_cand = out.get("sql")
+            if not isinstance(sql_cand, str) or not sql_cand.strip():
+                last_error, last_kind = "Clarification attempted during SQL repair with no valid SQL.", FAILED
+                if attempt < MAX_ATTEMPTS:
+                    repair_prompt = (
+                        f"QUESTION: {question}\n"
+                        f"FAILED SQL: None\n"
+                        f"EXACT ERROR: {last_error}\n"
+                        f"ALLOWED SCHEMA:\n{render_context(ctx)}\n\n"
+                        'Fix the SQL. Reply with JSON with only a "sql" field, e.g. {"sql": "SELECT ..."}.'
+                    )
+                    messages.append({"role": "assistant", "content": json.dumps(out)})
+                    messages.append({"role": "user", "content": repair_prompt})
+                    continue
+                break
         if status == "cannot_answer":
             if attempt == 1:
                 res.status, res.message = CANNOT_ANSWER, str(out.get("message", "Not answerable."))
                 break
-            break
+            sql_cand = out.get("sql")
+            if not isinstance(sql_cand, str) or not sql_cand.strip():
+                last_error, last_kind = "cannot_answer returned during repair with no valid SQL.", FAILED
+                if attempt < MAX_ATTEMPTS:
+                    repair_prompt = (
+                        f"QUESTION: {question}\n"
+                        f"FAILED SQL: None\n"
+                        f"EXACT ERROR: {last_error}\n"
+                        f"ALLOWED SCHEMA:\n{render_context(ctx)}\n\n"
+                        'Fix the SQL. Reply with JSON with only a "sql" field, e.g. {"sql": "SELECT ..."}.'
+                    )
+                    messages.append({"role": "assistant", "content": json.dumps(out)})
+                    messages.append({"role": "user", "content": repair_prompt})
+                    continue
+                break
 
-        sql = out.get("sql")
+        # Check metric template first, fall back to normal generation
+        metric_name = out.get("metric")
+        sql: str | None = None
+        if isinstance(metric_name, str) and metric_name.strip():
+            raw_filters = out.get("filters")
+            filters_list = [str(f) for f in raw_filters if f] if isinstance(raw_filters, list) else None
+            sql = compile_metric_template(metric_name, filters_list)
+
+        if not sql:
+            raw_sql = out.get("sql")
+            if isinstance(raw_sql, str) and raw_sql.strip():
+                sql = raw_sql
+
         err: str | None = None
         kind = FAILED
-        if not isinstance(sql, str) or not sql.strip():
-            err = "You returned no SQL."
+        if not sql:
+            err = "You returned no valid SQL."
         else:
             t0 = time.perf_counter()
             try:
@@ -208,21 +267,36 @@ def run_query(question: str, role: str, gate: Gate | None = None,
                         else:
                             err = f"Database execution error: {err_line}"
                     else:
-                        _cite(res, out, ctx)
-                        res.sql = safe_sql
-                        res.columns = ex.columns
-                        res.rows = [[_jsonable(v) for v in row] for row in ex.rows]
-                        res.truncated = ex.truncated
-                        res.answer = _simple_answer(res.columns, res.rows, res.truncated)
-                        res.flags = sanity_flags(res.columns, res.rows, res.truncated)
-                        _llm_answer(res, event)
-                        res.status = COMPLETED
-                        break
+                        shape_hint = None
+                        if not shape_retried:
+                            shape_hint = check_result_shape(question, ex.rows)
+
+                        if shape_hint:
+                            shape_retried = True
+                            err, kind = shape_hint, FAILED
+                        else:
+                            _cite(res, out, ctx)
+                            res.sql = safe_sql
+                            res.columns = ex.columns
+                            res.rows = [[_jsonable(v) for v in row] for row in ex.rows]
+                            res.truncated = ex.truncated
+                            res.answer = _simple_answer(res.columns, res.rows, res.truncated)
+                            res.flags = sanity_flags(res.columns, res.rows, res.truncated)
+                            _llm_answer(res, event)
+                            res.status = COMPLETED
+                            break
 
         last_error, last_kind = err or "unknown", kind
-        messages.append({"role": "assistant", "content": json.dumps(out)})
-        messages.append({"role": "user", "content":
-                         f"{last_error} Fix the query and reply with JSON again."})
+        if attempt < MAX_ATTEMPTS:
+            repair_prompt = (
+                f"QUESTION: {question}\n"
+                f"FAILED SQL: {sql or 'None'}\n"
+                f"EXACT ERROR: {last_error}\n"
+                f"ALLOWED SCHEMA:\n{render_context(ctx)}\n\n"
+                'Fix the SQL. Reply with JSON with only a "sql" field, e.g. {"sql": "SELECT ..."}.'
+            )
+            messages.append({"role": "assistant", "content": json.dumps(out)})
+            messages.append({"role": "user", "content": repair_prompt})
 
     if res.status not in (COMPLETED, CLARIFY, CANNOT_ANSWER, PENDING_APPROVAL, TIMEOUT):
         res.status, res.message = last_kind, last_error

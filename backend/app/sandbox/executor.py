@@ -1,8 +1,8 @@
 import json
 from dataclasses import dataclass
+from typing import LiteralString, cast
 
 import psycopg
-from typing import LiteralString, cast
 
 from app.config import settings
 

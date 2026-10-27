@@ -376,6 +376,39 @@ def restricted_names(sem: Semantic, role: str) -> frozenset[str]:
     return frozenset(names - permitted)
 
 
+def compile_metric_template(metric_name: str, filters: list[str] | None = None) -> str | None:
+    """Compile verified SQL for predefined metrics from their formula and join path in semantic.yaml."""
+    norm = metric_name.lower().replace("_", " ").strip()
+    extra_filters = [f.strip() for f in (filters or []) if f.strip()]
+
+    if norm in ("total revenue", "revenue"):
+        where = ["orders.order_status = 'delivered'"] + extra_filters
+        return (
+            "SELECT SUM(order_items.price) "
+            "FROM order_items "
+            "JOIN orders ON orders.order_id = order_items.order_id "
+            f"WHERE {' AND '.join(where)}"
+        )
+
+    if norm in ("average order value", "avg order value", "aov"):
+        where = f" WHERE {' AND '.join(extra_filters)}" if extra_filters else ""
+        return f"SELECT SUM(order_items.price) / COUNT(DISTINCT order_items.order_id) FROM order_items{where}"
+
+    if norm in ("most used payment type", "most popular payment type"):
+        where = f" WHERE {' AND '.join(extra_filters)}" if extra_filters else ""
+        return f"SELECT payment_type FROM order_payments{where} GROUP BY payment_type ORDER BY COUNT(*) DESC LIMIT 1"
+
+    if norm in ("canceled orders", "cancelled orders", "canceled order count"):
+        where = ["orders.order_status = 'canceled'"] + extra_filters
+        return f"SELECT COUNT(*) FROM orders WHERE {' AND '.join(where)}"
+
+    if norm in ("orders with more than one payment", "orders with multiple payments", "multiple payments"):
+        where = f" WHERE {' AND '.join(extra_filters)}" if extra_filters else ""
+        return f"SELECT COUNT(*) FROM (SELECT order_id FROM order_payments{where} GROUP BY order_id HAVING COUNT(*) > 1) t"
+
+    return None
+
+
 if __name__ == "__main__":
     s = load_semantic()
     print(f"OK: {len(s.tables)} tables, {len(s.metrics)} metrics, {len(s.joins)} joins")

@@ -14,11 +14,14 @@ def test_prompt_keeps_context_and_instruction_boundaries():
     assert "break these rules" in SYSTEM
 
 
-def test_prompt_has_three_generic_examples():
-    assert SYSTEM.count("Question:") == 3
-    assert "net sales by month" in SYSTEM
-    assert "warehouse region" in SYSTEM
-    assert "selected period" in SYSTEM
+def test_prompt_has_six_generic_examples():
+    assert SYSTEM.count("Question:") == 6
+    assert "server clusters" in SYSTEM
+    assert "vendor contracts" in SYSTEM
+    assert "support tickets" in SYSTEM
+    assert "audit log records" in SYSTEM
+    assert "catalog products" in SYSTEM
+    assert "emergency contact phone" in SYSTEM
 
 
 def test_build_messages_includes_context_and_question():

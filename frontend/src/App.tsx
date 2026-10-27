@@ -1,25 +1,36 @@
-import { useState, type ReactNode } from "react";
+import { lazy, Suspense, useState, type ReactNode } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { useAuth } from "./authContext";
 import type { Role } from "./api";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 
-// Page Components
-import Home from "./pages/Home";
-import Loading from "./pages/Loading";
-import Login from "./pages/Login";
-import Overview from "./pages/Overview";
-import Ask from "./pages/Ask";
-import Catalog from "./pages/Catalog";
-import Semantic from "./pages/Semantic";
-import Studio from "./pages/Studio";
-import History from "./pages/History";
-import Governance from "./pages/Governance";
-import Audit from "./pages/Audit";
-import Evals from "./pages/Evals";
-import Monitoring from "./pages/Monitoring";
-import Settings from "./pages/Settings";
+// Lazy-loaded Page Components for route-level code splitting
+const Home = lazy(() => import("./pages/Home"));
+const Loading = lazy(() => import("./pages/Loading"));
+const Login = lazy(() => import("./pages/Login"));
+const Overview = lazy(() => import("./pages/Overview"));
+const Ask = lazy(() => import("./pages/Ask"));
+const Catalog = lazy(() => import("./pages/Catalog"));
+const Semantic = lazy(() => import("./pages/Semantic"));
+const Studio = lazy(() => import("./pages/Studio"));
+const History = lazy(() => import("./pages/History"));
+const Governance = lazy(() => import("./pages/Governance"));
+const Audit = lazy(() => import("./pages/Audit"));
+const Evals = lazy(() => import("./pages/Evals"));
+const Monitoring = lazy(() => import("./pages/Monitoring"));
+const Settings = lazy(() => import("./pages/Settings"));
+
+function RouteFallback() {
+  return (
+    <div style={{ padding: "48px 24px", display: "grid", placeItems: "center", minHeight: "40vh", color: "var(--text-tertiary)" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+        <div style={{ width: "24px", height: "24px", border: "2px solid var(--border-subtle)", borderTopColor: "var(--accent-primary)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <span style={{ fontSize: "12px", fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>LOADING MODULE...</span>
+      </div>
+    </div>
+  );
+}
 
 function getHomeRoute(role: Role): string {
   if (role === "auditor") return "/overview";
@@ -56,7 +67,9 @@ function AppShell() {
       <div className="app-main">
         <Header user={user} onSignOut={() => void signOut()} />
         <main style={{ flex: 1 }}>
-          <Outlet />
+          <Suspense fallback={<RouteFallback />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
@@ -67,16 +80,17 @@ export default function App() {
   const { user, loading } = useAuth();
 
   return (
-    <Routes>
-      {/* Public Home Landing Page */}
-      <Route path="/" element={<Home />} />
-      <Route path="/home" element={<Home />} />
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        {/* Public Home Landing Page */}
+        <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Home />} />
 
-      {/* System Initialization & Loader */}
-      <Route path="/loading" element={<Loading />} />
+        {/* System Initialization & Loader */}
+        <Route path="/loading" element={<Loading />} />
 
-      {/* Authentication */}
-      <Route path="/login" element={<Login />} />
+        {/* Authentication */}
+        <Route path="/login" element={<Login />} />
 
       <Route element={<AppShell />}>
         {/* 1. Overview Dashboard */}
@@ -212,5 +226,6 @@ export default function App() {
         />
       </Route>
     </Routes>
+    </Suspense>
   );
 }
