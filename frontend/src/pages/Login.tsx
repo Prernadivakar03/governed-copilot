@@ -1,16 +1,23 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import { Shield, Lock, User as UserIcon, ArrowRight, AlertCircle } from "lucide-react";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { Shield, Lock, User as UserIcon, ArrowRight, AlertCircle, ArrowLeft, RefreshCw } from "lucide-react";
 import { errorMessage } from "../api";
 import { useAuth } from "../authContext";
 
 export default function Login() {
   const { user, signIn } = useAuth();
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [searchParams] = useSearchParams();
+  const initialRole = searchParams.get("role")?.toLowerCase().trim() || "";
+  const [username, setUsername] = useState(() => initialRole);
+  const [password, setPassword] = useState(() => (initialRole ? "DemoPass12345" : ""));
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const fillCredentials = (u: string, p: string = "DemoPass12345") => {
+    setUsername(u);
+    setPassword(p);
+  };
 
   if (user) return <Navigate to="/overview" replace />;
 
@@ -29,11 +36,6 @@ export default function Login() {
     }
   }
 
-  const fillCredentials = (u: string, p: string = "DemoPass12345") => {
-    setUsername(u);
-    setPassword(p);
-  };
-
   return (
     <div
       style={{
@@ -46,6 +48,34 @@ export default function Login() {
         background: "var(--bg-app)",
       }}
     >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "440px",
+          marginBottom: "14px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Link
+          to="/"
+          className="btn-ghost btn-sm"
+          style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-secondary)" }}
+        >
+          <ArrowLeft size={14} />
+          <span>Back to Home</span>
+        </Link>
+        <Link
+          to="/loading"
+          className="btn-ghost btn-sm"
+          style={{ display: "flex", alignItems: "center", gap: "5px", color: "var(--text-tertiary)", fontSize: "11.5px" }}
+        >
+          <RefreshCw size={12} />
+          <span>Re-run Bootloader</span>
+        </Link>
+      </div>
+
       <div
         className="card"
         style={{

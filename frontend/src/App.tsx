@@ -6,6 +6,8 @@ import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 
 // Page Components
+import Home from "./pages/Home";
+import Loading from "./pages/Loading";
 import Login from "./pages/Login";
 import Overview from "./pages/Overview";
 import Ask from "./pages/Ask";
@@ -66,6 +68,14 @@ export default function App() {
 
   return (
     <Routes>
+      {/* Public Home Landing Page */}
+      <Route path="/" element={<Home />} />
+      <Route path="/home" element={<Home />} />
+
+      {/* System Initialization & Loader */}
+      <Route path="/loading" element={<Loading />} />
+
+      {/* Authentication */}
       <Route path="/login" element={<Login />} />
 
       <Route element={<AppShell />}>
@@ -198,7 +208,7 @@ export default function App() {
         {/* Default Catch-all */}
         <Route
           path="*"
-          element={loading ? null : <Navigate to={user ? getHomeRoute(user.role) : "/login"} replace />}
+          element={loading ? null : <Navigate to={user ? getHomeRoute(user.role) : "/"} replace />}
         />
       </Route>
     </Routes>
