@@ -1,6 +1,7 @@
 from typing import Any
 
 import psycopg
+from psycopg import sql
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth.deps import require_roles
@@ -26,7 +27,7 @@ def list_tables(user: User = Depends(ALL_ROLES)) -> list[dict[str, Any]]:
                 continue
             # Fetch row count safely
             try:
-                cur.execute(f"SELECT count(*) FROM analytics.{t_name}")
+                cur.execute(sql.SQL("SELECT count(*) FROM analytics.{}").format(sql.Identifier(t_name)))
                 res = cur.fetchone()
                 row_count = next(iter(res.values())) if res else None
             except (psycopg.Error, OSError):
@@ -69,7 +70,7 @@ def get_table(table_name: str, user: User = Depends(ALL_ROLES)) -> dict[str, Any
 
     with connect() as conn, conn.cursor() as cur:
         try:
-            cur.execute(f"SELECT count(*) FROM analytics.{table_name}")
+            cur.execute(sql.SQL("SELECT count(*) FROM analytics.{}").format(sql.Identifier(table_name)))
             res = cur.fetchone()
             row_count = next(iter(res.values())) if res else None
         except (psycopg.Error, OSError):

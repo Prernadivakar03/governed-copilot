@@ -2,6 +2,7 @@ import json
 from dataclasses import dataclass
 
 import psycopg
+from typing import LiteralString, cast
 
 from app.config import settings
 
@@ -19,7 +20,7 @@ def execute(sql: str, role: str, max_rows: int = 1000, timeout_ms: int | None = 
     with psycopg.connect(settings.role_conninfo(role, t_ms)) as conn:
         conn.read_only = True
         with conn.cursor() as cur:
-            cur.execute(sql)  # no params, so '%' in LIKE patterns is safe
+            cur.execute(cast(LiteralString, sql))  # no params, so '%' in LIKE patterns is safe
             columns = [d.name for d in cur.description] if cur.description else []
             rows = cur.fetchmany(max_rows + 1)
         truncated = len(rows) >= max_rows  # the validator caps LIMIT at max_rows, so hitting it means "possibly cut"
@@ -32,8 +33,11 @@ def explain_cost(sql: str, role: str, timeout_ms: int | None = None) -> float:
     with psycopg.connect(settings.role_conninfo(role, t_ms)) as conn:
         conn.read_only = True
         with conn.cursor() as cur:
-            cur.execute("EXPLAIN (FORMAT JSON) " + sql)
-            plan = cur.fetchone()[0]
+            cur.execute(cast(LiteralString, f"EXPLAIN (FORMAT JSON) {sql}"))
+            row = cur.fetchone()
+            if not row:
+                raise RuntimeError("EXPLAIN query returned no results")
+            plan = row[0]
     if isinstance(plan, str):
         plan = json.loads(plan)
     return float(plan[0]["Plan"]["Total Cost"])

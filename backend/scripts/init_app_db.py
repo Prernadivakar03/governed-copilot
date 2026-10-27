@@ -1,12 +1,13 @@
 import sys
 from pathlib import Path
+from typing import LiteralString
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from app.db import connect
 
-STATEMENTS = [
+STATEMENTS: list[LiteralString] = [
     "CREATE SCHEMA IF NOT EXISTS app",
     """CREATE TABLE IF NOT EXISTS app.users (
         id SERIAL PRIMARY KEY,
@@ -64,6 +65,21 @@ STATEMENTS = [
     "DROP TRIGGER IF EXISTS audit_no_truncate ON app.audit_log",
     """CREATE TRIGGER audit_no_truncate BEFORE TRUNCATE ON app.audit_log
        FOR EACH STATEMENT EXECUTE FUNCTION app.audit_block_mutation()""",
+    """CREATE TABLE IF NOT EXISTS app.refresh_tokens (
+        jti TEXT PRIMARY KEY,
+        user_id INT NOT NULL REFERENCES app.users(id),
+        expires_at TIMESTAMPTZ NOT NULL,
+        revoked BOOLEAN NOT NULL DEFAULT FALSE,
+        revoked_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )""",
+    "CREATE INDEX IF NOT EXISTS ix_refresh_tokens_user ON app.refresh_tokens(user_id)",
+    """CREATE TABLE IF NOT EXISTS app.login_attempts (
+        id SERIAL PRIMARY KEY,
+        attempt_key TEXT NOT NULL,
+        attempt_time TIMESTAMPTZ NOT NULL DEFAULT now()
+    )""",
+    "CREATE INDEX IF NOT EXISTS ix_login_attempts_key_time ON app.login_attempts(attempt_key, attempt_time)",
 ]
 
 

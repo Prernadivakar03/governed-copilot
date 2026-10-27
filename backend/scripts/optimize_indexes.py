@@ -1,12 +1,13 @@
 import sys
 from pathlib import Path
+from typing import LiteralString, cast
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from app.db import connect
 
-ANALYTICS_INDEXES = [
+ANALYTICS_INDEXES: list[LiteralString] = [
     # Primary & Foreign Key Joins
     "CREATE INDEX IF NOT EXISTS ix_orders_id ON analytics.orders(order_id)",
     "CREATE INDEX IF NOT EXISTS ix_orders_cust ON analytics.orders(customer_id)",
@@ -55,7 +56,7 @@ def optimize() -> None:
                 print(f"Skipping index ({e})")
         for tbl in TABLES_TO_ANALYZE:
             try:
-                cur.execute(f"ANALYZE {tbl}")
+                cur.execute(cast(LiteralString, f"ANALYZE {tbl}"))
                 print(f"Analyzed {tbl}")
             except psycopg.Error as e:
                 print(f"Skipping analyze for {tbl} ({e})")

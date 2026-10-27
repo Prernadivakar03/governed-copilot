@@ -37,7 +37,7 @@ def check_postgres(timeout_s: float = 1.0) -> bool:
         ):
             cur.execute("SELECT 1")
             return True
-    except (psycopg.Error, OSError, TimeoutError):
+    except (psycopg.Error, OSError):
         return False
 
 
@@ -47,7 +47,7 @@ def check_ollama(timeout_s: float = 1.0) -> bool:
     try:
         r = httpx.get(f"{settings.ollama_url}/api/tags", timeout=timeout_s)
         return r.status_code == 200
-    except (httpx.HTTPError, OSError, TimeoutError):
+    except (httpx.HTTPError, OSError):
         return False
 
 

@@ -17,16 +17,20 @@ def collect() -> dict:
             "SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY latency_ms) AS p50, "
             "percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms) AS p95 "
             "FROM app.queries WHERE latency_ms IS NOT NULL").fetchone()
-        flags = conn.execute(
+        flags_row = conn.execute(
             "SELECT count(*) AS n FROM app.audit_log WHERE event = 'QUERY_OUTCOME' "
-            "AND payload::jsonb ->> 'hallucination_flag' = 'true'").fetchone()["n"]
-        claim_mismatches = conn.execute(
+            "AND payload::jsonb ->> 'hallucination_flag' = 'true'").fetchone()
+        flags = flags_row["n"] if flags_row else 0
+        cm_row = conn.execute(
             "SELECT count(*) AS n FROM app.audit_log WHERE event = 'QUERY_OUTCOME' "
-            "AND payload::jsonb ->> 'claim_mismatch' = 'true'").fetchone()["n"]
-        pending = conn.execute("SELECT count(*) AS n FROM app.approvals WHERE status = 'PENDING'").fetchone()["n"]
-        denied = conn.execute(
+            "AND payload::jsonb ->> 'claim_mismatch' = 'true'").fetchone()
+        claim_mismatches = cm_row["n"] if cm_row else 0
+        pending_row = conn.execute("SELECT count(*) AS n FROM app.approvals WHERE status = 'PENDING'").fetchone()
+        pending = pending_row["n"] if pending_row else 0
+        denied_row = conn.execute(
             "SELECT count(*) AS n FROM app.audit_log "
-            "WHERE event IN ('ACCESS_DENIED', 'APPROVAL_ATTEMPT_DENIED')").fetchone()["n"]
+            "WHERE event IN ('ACCESS_DENIED', 'APPROVAL_ATTEMPT_DENIED')").fetchone()
+        denied = denied_row["n"] if denied_row else 0
         per_day = conn.execute(
             "SELECT created_at::date AS day, count(*) AS total, "
             "count(*) FILTER (WHERE status = 'COMPLETED') AS completed "
@@ -38,9 +42,12 @@ def collect() -> dict:
         "by_status": by_status,
         "success_rate": by_status.get("COMPLETED", 0) / total if total else 0.0,
         "block_rate": by_status.get("BLOCKED", 0) / total if total else 0.0,
-        "latency_p50_ms": lat["p50"], "latency_p95_ms": lat["p95"],
-        "approvals_pending": pending, "hallucination_flags": flags,
-        "claim_mismatch_count": claim_mismatches, "denied_events": denied,
+        "latency_p50_ms": lat["p50"] if lat else None,
+        "latency_p95_ms": lat["p95"] if lat else None,
+        "approvals_pending": pending,
+        "hallucination_flags": flags,
+        "claim_mismatch_count": claim_mismatches,
+        "denied_events": denied,
         "per_day": [{**d, "day": str(d["day"])} for d in per_day],
     }
 
