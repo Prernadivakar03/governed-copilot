@@ -1,14 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { api, refreshSession, type User } from "./api";
-
-interface AuthState {
-  user: User | null;
-  loading: boolean;
-  signIn: (username: string, password: string) => Promise<User>;
-  signOut: () => Promise<void>;
-}
-
-const Ctx = createContext<AuthState | null>(null);
+import { AuthContext } from "./authContext";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -17,7 +9,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void (async () => {
       if (await refreshSession()) {
-        try { setUser(await api.me()); } catch { /* not signed in */ }
+        try {
+          setUser(await api.me());
+        } catch {
+          /* not signed in */
+        }
       }
       setLoading(false);
     })();
@@ -28,16 +24,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
     return u;
   };
+
   const signOut = async () => {
-    try { await api.logout(); } catch { /* clear locally anyway */ }
+    try {
+      await api.logout();
+    } catch {
+      /* clear locally anyway */
+    }
     setUser(null);
   };
 
-  return <Ctx.Provider value={{ user, loading, signIn, signOut }}>{children}</Ctx.Provider>;
-}
-
-export function useAuth(): AuthState {
-  const v = useContext(Ctx);
-  if (!v) throw new Error("useAuth must be used inside AuthProvider");
-  return v;
+  return (
+    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }

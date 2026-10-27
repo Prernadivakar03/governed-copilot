@@ -11,3 +11,11 @@ extraPaths = ["backend", "eval", "backend/.venv/Lib/site-packages"]
 venvPath = "backend"
 venv = ".venv"
 
+[tool.pytest.ini_options]
+pythonpath = ["backend"]
+testpaths = ["backend/tests"]
+markers = [
+    "unit: marks unit tests that require no external dependencies",
+    "integration: marks integration tests that require live database or LLM services",
+]
+

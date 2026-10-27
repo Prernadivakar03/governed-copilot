@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
-import { useAuth } from "./auth";
+import { useAuth } from "./authContext";
 import type { Role } from "./api";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
@@ -19,7 +19,7 @@ import Evals from "./pages/Evals";
 import Monitoring from "./pages/Monitoring";
 import Settings from "./pages/Settings";
 
-export function getHomeRoute(role: Role): string {
+function getHomeRoute(role: Role): string {
   if (role === "auditor") return "/overview";
   return "/overview";
 }

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Shield, Lock, User as UserIcon, ArrowRight, AlertCircle } from "lucide-react";
 import { errorMessage } from "../api";
-import { useAuth } from "../auth";
+import { useAuth } from "../authContext";
 
 export default function Login() {
   const { user, signIn } = useAuth();

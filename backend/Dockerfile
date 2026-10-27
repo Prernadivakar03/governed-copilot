@@ -13,7 +13,10 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY backend/requirements.txt ./requirements.txt
+
+# Install CPU-only PyTorch first to prevent downloading ~5GB of unnecessary CUDA wheels
 RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir torch --extra-index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
 # Pre-cache embedding model so container starts fast and offline

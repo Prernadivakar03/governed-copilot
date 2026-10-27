@@ -7,7 +7,7 @@ import {
   Key,
   Globe,
 } from "lucide-react";
-import { useAuth } from "../auth";
+import { useAuth } from "../authContext";
 
 export default function Settings() {
   const { user, signOut } = useAuth();
