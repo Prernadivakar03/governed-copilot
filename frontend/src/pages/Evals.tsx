@@ -35,7 +35,7 @@ export default function Evals() {
         <div className="page-header-text">
           <h1>Research Evaluation & Hallucination Audits</h1>
           <p>
-            M.Sc. Data Science experimental results · Empirical benchmark of governed semantic layer vs. baseline architectures
+            Empirical benchmark of governed semantic layer vs. baseline architectures
           </p>
         </div>
 
