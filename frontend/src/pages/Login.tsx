@@ -145,9 +145,12 @@ export default function Login() {
 
         {/* Quick-Fill Demo Profiles for Examiners */}
         <div style={{ marginTop: "24px", paddingTop: "18px", borderTop: "1px solid var(--border-subtle)" }}>
-          <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>
+          <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>
             Quick-Login Role Profiles
           </div>
+          <p style={{ fontSize: "11.5px", color: "var(--text-secondary)", marginBottom: "10px" }}>
+            Single seeded password: <code style={{ color: "var(--accent)", fontWeight: 600 }}>DemoPass12345</code> (from <code style={{ fontSize: "10.5px" }}>SEED_USER_PASSWORD</code>)
+          </p>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
             <button

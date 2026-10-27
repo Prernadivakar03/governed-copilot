@@ -3,6 +3,12 @@
 analyst_ro : everything except customers.customer_email / customer_phone
 steward_ro : everything
 """
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
 import psycopg
 from app.config import settings
 from psycopg import sql

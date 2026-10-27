@@ -7,7 +7,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends"]
 
 [tool.pyright]
 include = ["backend", "eval"]
-extraPaths = ["backend", "eval"]
+extraPaths = ["backend", "eval", "backend/.venv/Lib/site-packages"]
 venvPath = "backend"
 venv = ".venv"
 

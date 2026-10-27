@@ -5,8 +5,10 @@
   ],
   "extraPaths": [
     "backend",
-    "eval"
+    "eval",
+    "backend/.venv/Lib/site-packages"
   ],
   "venvPath": "backend",
-  "venv": ".venv"
+  "venv": ".venv",
+  "pythonPath": "backend/.venv/Scripts/python.exe"
 }

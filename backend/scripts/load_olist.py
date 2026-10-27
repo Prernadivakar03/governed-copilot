@@ -1,12 +1,20 @@
 """Load Olist CSVs into the `analytics` schema and add synthetic PII columns."""
+import argparse
 import hashlib
+import os
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 import pandas as pd
-from app.config import ROOT, settings
+from app.config import ROOT as REPO_ROOT
+from app.config import settings
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 
-RAW = ROOT / "data" / "raw"
+DEFAULT_RAW = REPO_ROOT / "data" / "raw"
 
 FILES = {
     "olist_customers_dataset.csv": "customers",
@@ -60,6 +68,16 @@ def synth_phone(customer_id: str) -> str:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Load Olist dataset CSVs into PostgreSQL")
+    parser.add_argument(
+        "--data-path",
+        type=str,
+        default=os.environ.get("OLIST_DATA_PATH", str(DEFAULT_RAW)),
+        help="Directory containing the raw Olist CSV files",
+    )
+    args = parser.parse_args()
+    data_dir = Path(args.data_path)
+
     url = URL.create(
         "postgresql+psycopg",
         username=settings.postgres_user,
@@ -73,7 +91,7 @@ def main() -> None:
         conn.execute(text("CREATE SCHEMA IF NOT EXISTS analytics"))
 
     for filename, table in FILES.items():
-        path = RAW / filename
+        path = data_dir / filename
         if not path.exists():
             raise SystemExit(f"Missing file: {path}")
         df = pd.read_csv(path)

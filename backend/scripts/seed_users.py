@@ -1,4 +1,10 @@
 """Create demo users. All share SEED_USER_PASSWORD from .env (dev only)."""
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
 from app.auth.security import hash_password
 from app.config import settings
 from app.db import connect
@@ -24,7 +30,7 @@ def main() -> None:
             )
             audit.append("USER_SEEDED", "system", "system", None,
                          {"username": username, "role": role}, conn=conn)
-    print("seeded:", ", ".join(u for u, _ in USERS))
+    print(f"Seeded {len(USERS)} users ({', '.join(u for u, _ in USERS)}) with SEED_USER_PASSWORD: {settings.seed_user_password}")
 
 
 if __name__ == "__main__":
