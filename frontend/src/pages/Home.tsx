@@ -72,7 +72,7 @@ export default function Home() {
             </div>
             <div>
               <span className="home-brand-title">Governed Copilot</span>
-              <span className="home-brand-badge">MDS-25</span>
+              
             </div>
           </div>
         </div>
@@ -143,7 +143,7 @@ export default function Home() {
         <div className="hero-content">
           <div className="hero-badge">
             <Sparkles size={13} className="text-accent" />
-            <span>M.SC. DATA SCIENCE CAPSTONE PROJECT • SEMESTER III</span>
+            {/* <span>M.SC. DATA SCIENCE CAPSTONE PROJECT • SEMESTER III</span> */}
           </div>
 
           <h1 className="hero-headline">
@@ -629,7 +629,6 @@ export default function Home() {
               <span className="home-brand-title">Governed Copilot</span>
             </div>
             <p className="footer-caption">
-              M.Sc. Data Science Capstone Research Platform — Semester III.
               Engineered with AST parsing, physical database RBAC, and cryptographic audit chains.
             </p>
           </div>
@@ -665,8 +664,9 @@ export default function Home() {
         </div>
 
         <div className="footer-bottom">
-          <span>&copy; 2026 MDS-25 Capstone Research Team. All rights reserved.</span>
-          <span>Zero-Trust Analytical Governance</span>
+          <span>&copy; prernadivakar0328@gmail.com. All rights reserved.</span>
+          <span>Zero-Trust Analytical Governance· Secure. Explainable. Auditable.
+          </span>
         </div>
       </footer>
     </div>

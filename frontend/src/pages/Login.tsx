@@ -102,9 +102,6 @@ export default function Login() {
           </div>
           <div>
             <h1 style={{ fontSize: "20px", margin: 0 }}>Governed Analytics</h1>
-            <p style={{ fontSize: "12px", color: "var(--text-secondary)", margin: "2px 0 0" }}>
-              MDS-25 Research-Grade Copilot Platform
-            </p>
           </div>
         </div>
 

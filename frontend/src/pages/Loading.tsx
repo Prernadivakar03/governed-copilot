@@ -163,7 +163,7 @@ export default function Loading() {
             <span>INITIALIZING GOVERNANCE RUNTIME</span>
           </div>
           <h1 className="loading-title">
-            MDS-25 <span className="gradient-text">Governed Analytics</span>
+            <span className="gradient-text">Governed Analytics</span>
           </h1>
           <p className="loading-subtitle">
             Establishing zero-trust AST parsing, database RBAC sandboxes, and cryptographic audit chains
